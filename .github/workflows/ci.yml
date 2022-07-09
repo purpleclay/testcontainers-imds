@@ -26,16 +26,8 @@ on:
   pull_request:
 jobs:
   ci:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
-      - name: Set Git Line Endings
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-        if: matrix.os == 'windows-latest'
       - name: Checkout
         uses: actions/checkout@v3
       - name: Setup Go
@@ -57,15 +49,11 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Test
         run: task test
-      # All static checks from this point should run on linux as it is the
-      # fastest platform
       - name: Lint Code
-        if: matrix.os == 'ubuntu-latest'
         uses: golangci/golangci-lint-action@v3.2.0
         with:
           skip-go-installation: true
       - name: misspell
-        if: matrix.os == 'ubuntu-latest'
         uses: reviewdog/action-misspell@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -78,5 +66,4 @@ jobs:
             ./.github/workflows/**
             ./CODE_OF_CONDUCT.md
       - name: Code Coverage
-        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v3
