@@ -22,4 +22,47 @@ SOFTWARE.
 
 package aemm_test
 
-// TODO: just test that a container can be started up and data is requested ok
+import (
+	"context"
+	"io/ioutil"
+	"net/http"
+	"testing"
+
+	aemm "github.com/purpleclay/testcontainers-aemm"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestContainerWithDefaults(t *testing.T) {
+	containerWithDefaults(t)
+
+	out := get(t, "http://localhost:1338/latest/meta-data")
+	assert.Contains(t, string(out), "local-ipv4")
+}
+
+func containerWithDefaults(t *testing.T) {
+	t.Helper()
+
+	container, err := aemm.Container(context.Background())
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		container.Terminate(context.Background())
+	})
+}
+
+func get(t *testing.T, url string) string {
+	t.Helper()
+
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		resp.Body.Close()
+	})
+
+	out, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return string(out)
+}
