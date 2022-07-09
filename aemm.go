@@ -29,7 +29,30 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Container ...
+// Container will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
+// simulating the Amazon EC2 Metadata Service (IMDS). Once started, IMDS will
+// be accessible through the following endpoint:
+//
+// http://localhost:1338/latest/metadata
+//
+// By using the default settings, both IMDSv1 and IMDSv2 are supported. Metadata about the
+// mocked EC2 instance can then be retrieved using any of the documented categories,
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
+//
+// For example:
+// 	curl http://localhost:1338/latest/metadata/local-ipv4
+// 	curl http://localhost:1338/latest/metadata/block-device-mapping/root
+//
+// To ensure your AWS config is configured to call this mock, the required option needs to
+// be set:
+//
+// 	package main
+//
+//	import "github.com/aws/aws-sdk-go-v2/config"
+//
+//	func main() {
+//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/metadata"))
+//	}
 func Container(ctx context.Context) (testcontainers.Container, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.10.1",
