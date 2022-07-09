@@ -54,8 +54,28 @@ import (
 //		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/metadata"))
 //	}
 func Container(ctx context.Context) (testcontainers.Container, error) {
+	return ContainerWith(ctx, DefaultOptions)
+}
+
+// LaunchOptions ...
+type LaunchOptions struct {
+	// StrictIMDSv2 ...
+	StrictIMDSv2 bool
+}
+
+// DefaultOptions ...
+var DefaultOptions = LaunchOptions{}
+
+// ContainerWith ...
+func ContainerWith(ctx context.Context, opts LaunchOptions) (testcontainers.Container, error) {
+	flags := []string{}
+	if opts.StrictIMDSv2 {
+		flags = append(flags, "--imdsv2")
+	}
+
 	req := testcontainers.ContainerRequest{
 		Image:        "public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.10.1",
+		Cmd:          flags,
 		ExposedPorts: []string{"1338:1338/tcp"},
 		WaitingFor:   wait.ForLog("Initiating ec2-metadata-mock for all mocks on port 1338"),
 	}
