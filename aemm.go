@@ -31,7 +31,8 @@ import (
 
 // Container will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
 // simulating the Amazon EC2 Metadata Service (IMDS). Once started, IMDS will
-// be accessible through the following endpoint:
+// be accessible through the endpoint. As the caller it is your responsibility to
+// terminate the container through calling Terminate()
 //
 // http://localhost:1338/latest/metadata
 //
@@ -77,7 +78,8 @@ var DefaultOptions = LaunchOptions{}
 // ContainerWith will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
 // simulating the Amazon EC2 Metadata Service (IMDS). The launch behaviour of the AEMM
 // can be configured through the provided LaunchOptions. Once started, IMDS will
-// be accessible through the following endpoint:
+// be accessible through the endpoint. As the caller it is your responsibility to
+// terminate the container through calling Terminate()
 //
 // http://localhost:1338/latest/metadata
 //
