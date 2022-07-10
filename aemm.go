@@ -108,7 +108,7 @@ func ContainerWith(ctx context.Context, opts LaunchOptions) (testcontainers.Cont
 	}
 
 	req := testcontainers.ContainerRequest{
-		Image:        "public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.10.1",
+		Image:        "public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.11.1",
 		Cmd:          flags,
 		ExposedPorts: []string{"1338:1338/tcp"},
 		WaitingFor:   wait.ForLog("Initiating ec2-metadata-mock for all mocks on port 1338"),
