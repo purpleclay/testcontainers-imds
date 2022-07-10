@@ -24,7 +24,9 @@ package aemm
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/creasty/defaults"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -55,11 +57,24 @@ import (
 //		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/metadata"))
 //	}
 func Container(ctx context.Context) (testcontainers.Container, error) {
-	return ContainerWith(ctx, DefaultOptions)
+	return ContainerWith(ctx, LaunchOptions{})
 }
 
 // LaunchOptions defines all configurable options when launching the AEMM container
 type LaunchOptions struct {
+	// Image is the name of the AEMM image to pull when launching the container
+	// 	@Default public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock
+	Image string `default:"public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock"`
+
+	// ImageTag is the version of the AEMM image to pull from the source docker registry
+	//	@Default v1.11.1
+	ImageTag string `default:"v1.11.1"`
+
+	// ExposedPort defines which port on the host will be mapped to the default port
+	// of the container
+	//	@Default 1338
+	ExposedPort string `default:"1338"`
+
 	// StrictIMDSv2 will enforce IMDSv2 and require a session token when making metadata
 	// requests. A token is requested by issuing a PUT request to the token endpoint, and
 	// supplying a TTL of between 1 and 2600 seconds.
@@ -71,9 +86,6 @@ type LaunchOptions struct {
 	// 	GET localhost:1338/latest/metadata/local-ipv4 -H "X-aws-ec2-metadata-token: $TOKEN"
 	StrictIMDSv2 bool
 }
-
-// DefaultOptions provides a way to launch the AEMM container with a strict set of defaults
-var DefaultOptions = LaunchOptions{}
 
 // ContainerWith will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
 // simulating the Amazon EC2 Metadata Service (IMDS). The launch behaviour of the AEMM
@@ -107,10 +119,13 @@ func ContainerWith(ctx context.Context, opts LaunchOptions) (testcontainers.Cont
 		flags = append(flags, "--imdsv2")
 	}
 
+	// Ensure all defaults are set before launching the container
+	defaults.Set(&opts)
+
 	req := testcontainers.ContainerRequest{
-		Image:        "public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock:v1.11.1",
+		Image:        fmt.Sprintf("%s:%s", opts.Image, opts.ImageTag),
 		Cmd:          flags,
-		ExposedPorts: []string{"1338:1338/tcp"},
+		ExposedPorts: []string{opts.ExposedPort + ":1338/tcp"},
 		WaitingFor:   wait.ForLog("Initiating ec2-metadata-mock for all mocks on port 1338"),
 	}
 
