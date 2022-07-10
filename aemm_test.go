@@ -33,10 +33,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestContainerWithDefaults(t *testing.T) {
+func TestContainer_WithDefaults(t *testing.T) {
 	containerWithDefaults(t)
 
-	out := get(t, "http://localhost:1338/latest/meta-data")
+	out, _ := get(t, "http://localhost:1338/latest/meta-data")
+	assert.Contains(t, string(out), "local-ipv4")
+}
+
+func TestContainer_StrictIMDSv2Unauthorised(t *testing.T) {
+	containerWithOptions(t, aemm.LaunchOptions{StrictIMDSv2: true})
+
+	out, status := get(t, "http://localhost:1338/latest/meta-data")
+
+	assert.Contains(t, string(out), "<h1>401 - Unauthorized</h1>")
+	assert.Equal(t, http.StatusUnauthorized, status)
+}
+
+func TestContainer_StrictIMDSv2(t *testing.T) {
+	containerWithOptions(t, aemm.LaunchOptions{StrictIMDSv2: true})
+
+	out, _ := getAuthorised(t, "http://localhost:1338/latest/meta-data")
+
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
@@ -51,7 +68,18 @@ func containerWithDefaults(t *testing.T) {
 	})
 }
 
-func get(t *testing.T, url string) string {
+func containerWithOptions(t *testing.T, opts aemm.LaunchOptions) {
+	t.Helper()
+
+	container, err := aemm.ContainerWith(context.Background(), opts)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		container.Terminate(context.Background())
+	})
+}
+
+func get(t *testing.T, url string) (string, int) {
 	t.Helper()
 
 	resp, err := http.Get(url)
@@ -64,5 +92,44 @@ func get(t *testing.T, url string) string {
 	out, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	return string(out)
+	return string(out), resp.StatusCode
+}
+
+func getAuthorised(t *testing.T, url string) (string, int) {
+	t.Helper()
+
+	// Request an authorisation token using supported maximum duration
+	authReq, err := http.NewRequest(http.MethodPut, "http://localhost:1338/latest/api/token", http.NoBody)
+	require.NoError(t, err)
+
+	authReq.Header.Add("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+
+	authResp, err := http.DefaultClient.Do(authReq)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		authResp.Body.Close()
+	})
+
+	data, err := ioutil.ReadAll(authResp.Body)
+	require.NoError(t, err)
+	token := string(data)
+
+	// Perform IMDS request using authorisation token
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
+	require.NoError(t, err)
+
+	req.Header.Add("X-aws-ec2-metadata-token", token)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		resp.Body.Close()
+	})
+
+	out, err := ioutil.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return string(out), resp.StatusCode
 }
