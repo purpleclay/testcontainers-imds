@@ -114,9 +114,13 @@ type LaunchOptions struct {
 //		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/metadata"))
 //	}
 func ContainerWith(ctx context.Context, opts LaunchOptions) (testcontainers.Container, error) {
+	// Adjust the wait strategy based on the options
+	waitStrategy := wait.ForLog("Initiating ec2-metadata-mock for all mocks on port 1338")
+
 	flags := []string{}
 	if opts.StrictIMDSv2 {
 		flags = append(flags, "--imdsv2")
+		waitStrategy = wait.ForLog("imdsv2: true")
 	}
 
 	// Ensure all defaults are set before launching the container
@@ -126,7 +130,7 @@ func ContainerWith(ctx context.Context, opts LaunchOptions) (testcontainers.Cont
 		Image:        fmt.Sprintf("%s:%s", opts.Image, opts.ImageTag),
 		Cmd:          flags,
 		ExposedPorts: []string{opts.ExposedPort + ":1338/tcp"},
-		WaitingFor:   wait.ForLog("Initiating ec2-metadata-mock for all mocks on port 1338"),
+		WaitingFor:   waitStrategy,
 	}
 
 	return testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
