@@ -24,4 +24,9 @@ SOFTWARE.
 // supporting the simulation and testing of the Amazon Instance Metadata Service (IMDS).
 // Supporting documentation for the AEMM container can be found at:
 // https://github.com/aws/amazon-ec2-metadata-mock
+//
+// The Amazon EC2 Metadata Mock (AEMM) supports almost all metadata categories, except for the
+// following:
+//  - ancestor-ami-ids
+//  - events/maintenance/history
 package aemm
