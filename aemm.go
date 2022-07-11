@@ -25,26 +25,27 @@ package aemm
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/creasty/defaults"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Container will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
+// Start will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
 // simulating the Amazon EC2 Metadata Service (IMDS). Once started, IMDS will
 // be accessible through the endpoint. As the caller it is your responsibility to
-// terminate the container through calling Terminate()
+// terminate the container by invoking the Terminate() method on the container.
 //
-// http://localhost:1338/latest/metadata
+// http://localhost:1338/latest/meta-data
 //
 // By using the default settings, both IMDSv1 and IMDSv2 are supported. Metadata about the
 // mocked EC2 instance can then be retrieved using any of the documented categories,
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
 //
 // For example:
-// 	curl http://localhost:1338/latest/metadata/local-ipv4
-// 	curl http://localhost:1338/latest/metadata/block-device-mapping/root
+// 	curl http://localhost:1338/latest/meta-data/local-ipv4
+// 	curl http://localhost:1338/latest/meta-data/block-device-mapping/root
 //
 // To ensure your AWS config is configured to call this mock, the required option needs to
 // be set:
@@ -54,14 +55,29 @@ import (
 //	import "github.com/aws/aws-sdk-go-v2/config"
 //
 //	func main() {
-//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/metadata"))
+//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data"))
 //	}
-func Container(ctx context.Context) (testcontainers.Container, error) {
-	return ContainerWith(ctx, LaunchOptions{})
+func Start(ctx context.Context) (testcontainers.Container, error) {
+	return StartWith(ctx, Options{})
 }
 
-// LaunchOptions defines all configurable options when launching the AEMM container
-type LaunchOptions struct {
+// MustStart behaves in the same way as Start but panics if the container cannot
+// be started for any reason. This removes the need to handle any returned errors,
+// simplifying initialisation.
+//
+// As the caller it is your responsibility to terminate the container by invoking
+// the Terminate() method on the container.
+func MustStart(ctx context.Context) testcontainers.Container {
+	container, err := StartWith(ctx, Options{})
+	if err != nil {
+		panic(`aemm: MustStart(): ` + err.Error())
+	}
+
+	return container
+}
+
+// Options defines all configurable options when starting the AEMM container
+type Options struct {
 	// Image is the name of the AEMM image to pull when launching the container
 	// 	@Default public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock
 	Image string `default:"public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock"`
@@ -83,25 +99,25 @@ type LaunchOptions struct {
 	//
 	// Any subsequent request must provide the token as a header:
 	//
-	// 	GET localhost:1338/latest/metadata/local-ipv4 -H "X-aws-ec2-metadata-token: $TOKEN"
+	// 	GET localhost:1338/latest/meta-data/local-ipv4 -H "X-aws-ec2-metadata-token: $TOKEN"
 	StrictIMDSv2 bool
 }
 
-// ContainerWith will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
+// StartWith will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
 // simulating the Amazon EC2 Metadata Service (IMDS). The launch behaviour of the AEMM
 // can be configured through the provided LaunchOptions. Once started, IMDS will
 // be accessible through the endpoint. As the caller it is your responsibility to
-// terminate the container through calling Terminate()
+// terminate the container by invoking the Terminate() method on the container.
 //
-// http://localhost:1338/latest/metadata
+// http://localhost:1338/latest/meta-data
 //
 // By using the default settings, both IMDSv1 and IMDSv2 are supported. Metadata about the
 // mocked EC2 instance can then be retrieved using any of the documented categories,
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
 //
 // For example:
-// 	curl http://localhost:1338/latest/metadata/local-ipv4
-// 	curl http://localhost:1338/latest/metadata/block-device-mapping/root
+// 	curl http://localhost:1338/latest/meta-data/local-ipv4
+// 	curl http://localhost:1338/latest/meta-data/block-device-mapping/root
 //
 // To ensure your AWS config is configured to call this mock, the required option needs to
 // be set:
@@ -111,16 +127,20 @@ type LaunchOptions struct {
 //	import "github.com/aws/aws-sdk-go-v2/config"
 //
 //	func main() {
-//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/metadata"))
+//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data"))
 //	}
-func ContainerWith(ctx context.Context, opts LaunchOptions) (testcontainers.Container, error) {
+func StartWith(ctx context.Context, opts Options) (testcontainers.Container, error) {
 	// Adjust the wait strategy based on the options
-	waitStrategy := wait.ForLog("Initiating ec2-metadata-mock for all mocks on port 1338")
+	waitStrategy := wait.ForHTTP("/latest/meta-data").WithPort("1338")
 
 	flags := []string{}
 	if opts.StrictIMDSv2 {
 		flags = append(flags, "--imdsv2")
-		waitStrategy = wait.ForLog("imdsv2: true")
+
+		// 401 should be issued without a token
+		waitStrategy = wait.ForHTTP("/latest/meta-data").
+			WithPort("1338").
+			WithStatusCodeMatcher(func(status int) bool { return status == http.StatusUnauthorized })
 	}
 
 	// Ensure all defaults are set before launching the container
@@ -137,4 +157,19 @@ func ContainerWith(ctx context.Context, opts LaunchOptions) (testcontainers.Cont
 		ContainerRequest: req,
 		Started:          true,
 	})
+}
+
+// MustStartWith behaves in the same way as StartWith but panics if the container cannot
+// be started for any reason. This removes the need to handle any returned errors,
+// simplifying initialisation.
+//
+// As the caller it is your responsibility to terminate the container by invoking
+// the Terminate() method on the container.
+func MustStartWith(ctx context.Context, opts Options) testcontainers.Container {
+	container, err := StartWith(ctx, opts)
+	if err != nil {
+		panic(`aemm: MustStartWith(` + fmt.Sprintf("%#v", opts) + `): ` + err.Error())
+	}
+
+	return container
 }
