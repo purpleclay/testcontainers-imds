@@ -40,10 +40,22 @@ func TestStart(t *testing.T) {
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
-func TestMustStart(t *testing.T) {
-	// TODO: start up a random container that blocks the default port
+func TestMustStart_Panics(t *testing.T) {
+	// Deliberately spin up a container that blocks the default port of 1338
+	startWithDefaults(t)
 
-	// TODO: ensure the code panics
+	require.Panics(t, func() {
+		aemm.MustStart(context.Background())
+	})
+}
+
+func TestMustStart(t *testing.T) {
+	require.NotPanics(t, func() {
+		ctx := context.Background()
+
+		container := aemm.MustStart(ctx)
+		container.Terminate(ctx)
+	})
 }
 
 func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
@@ -63,8 +75,19 @@ func TestStartWith_StrictIMDSv2(t *testing.T) {
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
+func TestMustStartWith_Panics(t *testing.T) {
+	require.Panics(t, func() {
+		aemm.MustStartWith(context.Background(), aemm.Options{Image: "image-pull-failure"})
+	})
+}
+
 func TestMustStartWith(t *testing.T) {
-	// TODO: start with an image that doesn't exist
+	require.NotPanics(t, func() {
+		ctx := context.Background()
+
+		container := aemm.MustStartWith(ctx, aemm.Options{})
+		container.Terminate(ctx)
+	})
 }
 
 func startWithDefaults(t *testing.T) {
