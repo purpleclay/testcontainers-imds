@@ -22,8 +22,10 @@ SOFTWARE.
 
 package aemm
 
-// HTTP status codes as registered with IANA.
-// See: https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+// Instance Metadata is divided into categories. To retrieve instance metadata, a category
+// is provided within the request. To find a comprehensive description of each category,
+// view the official AWS documentation at:
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
 const (
 	PathAMIID                                  = "ami-id"
 	PathAMILaunchIndex                         = "ami-launch-index"
@@ -87,8 +89,7 @@ const (
 	PathTagsInstance                           = "tags/instance"
 )
 
-// HTTP status codes as registered with IANA.
-// See: https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+// Instance Metadata values as returned by the AEMM mock for each supported category
 const (
 	ValueAMIID                                  = "ami-0a887e401f7654935"
 	ValueAMILaunchIndex                         = "0"
@@ -99,11 +100,11 @@ const (
 	ValueBlockDeviceMappingRoot                 = "/dev/xvda"
 	ValueBlockDeviceMappingSwap                 = "sdcs"
 	ValueElasticInferenceAssociation            = `{"version_2018_04_12":{"elastic-inference-accelerator-id":"eia-bfa21c7904f64a82a21b9f4540169ce1","elastic-inference-accelerator-type":"eia1.medium"}}`
-	ValueEventsMaintenanceScheduled             = "" // TODO: JSON
-	ValueEventsRecommendationsRebalance         = "" // TODO: JSON
+	ValueEventsMaintenanceScheduled             = valueEventsMaintenanceScheduled
+	ValueEventsRecommendationsRebalance         = valueEventsRecommendationsRebalance
 	ValueHostname                               = "ip-172-16-34-43.ec2.internal"
-	ValueIAMInfo                                = "" // TODO: JSON
-	ValueIAMSecurityCredentials                 = "" // TODO: JSON
+	ValueIAMInfo                                = valueIAMInfo
+	ValueIAMSecurityCredentials                 = valueIAMSecurityCredentials
 	ValueInstanceAction                         = "none"
 	ValueInstanceID                             = "i-1234567890abcdef0"
 	ValueInstanceLifecycle                      = "on-demand"
@@ -147,8 +148,49 @@ const (
 	ValueSecurityGroups                         = "ura-launch-wizard-harry-1"
 	ValueServicesDomain                         = "amazonaws.com"
 	ValueServicesPartition                      = "aws"
-	ValueSpotInstanceAction                     = "" // TODO: JSON
+	ValueSpotInstanceAction                     = valueSpotInstanceActionJSON
 	ValueSpotTerminationTime                    = "2022-07-11T09:58:52Z"
 	ValueTagsInstance                           = `Name
 Test`
+)
+
+// JSON values returned by the AEMM mock
+const (
+	valueEventsMaintenanceScheduled = `[
+	{
+		"Code": "system-reboot",
+		"Description": "The instance is scheduled for system-reboot",
+		"State": "active",
+		"EventId": "instance-event-1234567890abcdef0",
+		"NotBefore": "11 Jul 2022 09:11:54 GMT",
+		"NotAfter": "18 Jul 2022 09:11:54 GMT",
+		"NotBeforeDeadline": "20 Jul 2022 09:11:54 GMT"
+	}
+]`
+
+	valueEventsRecommendationsRebalance = `{
+	"noticeTime": "2022-07-11T10:20:22Z"
+}`
+
+	valueIAMInfo = `{
+	"Code": "Success",
+	"LastUpdated": "2020-04-02T18:50:40Z",
+	"InstanceProfileArn": "arn:aws:iam::896453262835:instance-profile/baskinc-role",
+	"InstanceProfileId": "AIPA5BOGHHXZELSK34VU4"
+}`
+
+	valueIAMSecurityCredentials = `{
+	"Code": "Success",
+	"LastUpdated": "2020-04-02T18:50:40Z",
+	"Type": "AWS-HMAC",
+	"AccessKeyId": "12345678901",
+	"SecretAccessKey": "v/12345678901",
+	"Token": "TEST92test48TEST+y6RpoTEST92test48TEST/8oWVAiBqTEsT5Ky7ty2tEStxC1T==",
+	"Expiration": "2020-04-02T00:49:51Z"
+}`
+
+	valueSpotInstanceActionJSON = `{
+	"action": "terminate",
+	"time": "2022-07-11T10:25:54Z"
+}`
 )
