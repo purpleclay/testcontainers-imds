@@ -89,7 +89,13 @@ const (
 	PathTagsInstance                           = "tags/instance"
 )
 
-// Instance Metadata values as returned by the AEMM mock for each supported category
+// Instance Metadata values as returned by the AEMM mock for each supported category.
+// Values are not provided for the following categories, as the AEMM mock returns dated values:
+//
+//  - events/maintenance/scheduled
+//  - events/recommendations/rebalance
+//  - spot/instance-action
+//  - spot/termination-time
 const (
 	ValueAMIID                                  = "ami-0a887e401f7654935"
 	ValueAMILaunchIndex                         = "0"
@@ -100,8 +106,6 @@ const (
 	ValueBlockDeviceMappingRoot                 = "/dev/xvda"
 	ValueBlockDeviceMappingSwap                 = "sdcs"
 	ValueElasticInferenceAssociation            = `{"version_2018_04_12":{"elastic-inference-accelerator-id":"eia-bfa21c7904f64a82a21b9f4540169ce1","elastic-inference-accelerator-type":"eia1.medium"}}`
-	ValueEventsMaintenanceScheduled             = valueEventsMaintenanceScheduled
-	ValueEventsRecommendationsRebalance         = valueEventsRecommendationsRebalance
 	ValueHostname                               = "ip-172-16-34-43.ec2.internal"
 	ValueIAMInfo                                = valueIAMInfo
 	ValueIAMSecurityCredentials                 = valueIAMSecurityCredentials
@@ -148,30 +152,12 @@ const (
 	ValueSecurityGroups                         = "ura-launch-wizard-harry-1"
 	ValueServicesDomain                         = "amazonaws.com"
 	ValueServicesPartition                      = "aws"
-	ValueSpotInstanceAction                     = valueSpotInstanceActionJSON
-	ValueSpotTerminationTime                    = "2022-07-11T09:58:52Z"
 	ValueTagsInstance                           = `Name
 Test`
 )
 
 // JSON values returned by the AEMM mock
 const (
-	valueEventsMaintenanceScheduled = `[
-	{
-		"Code": "system-reboot",
-		"Description": "The instance is scheduled for system-reboot",
-		"State": "active",
-		"EventId": "instance-event-1234567890abcdef0",
-		"NotBefore": "11 Jul 2022 09:11:54 GMT",
-		"NotAfter": "18 Jul 2022 09:11:54 GMT",
-		"NotBeforeDeadline": "20 Jul 2022 09:11:54 GMT"
-	}
-]`
-
-	valueEventsRecommendationsRebalance = `{
-	"noticeTime": "2022-07-11T10:20:22Z"
-}`
-
 	valueIAMInfo = `{
 	"Code": "Success",
 	"LastUpdated": "2020-04-02T18:50:40Z",
@@ -187,10 +173,5 @@ const (
 	"SecretAccessKey": "v/12345678901",
 	"Token": "TEST92test48TEST+y6RpoTEST92test48TEST/8oWVAiBqTEsT5Ky7ty2tEStxC1T==",
 	"Expiration": "2020-04-02T00:49:51Z"
-}`
-
-	valueSpotInstanceActionJSON = `{
-	"action": "terminate",
-	"time": "2022-07-11T10:25:54Z"
 }`
 )
