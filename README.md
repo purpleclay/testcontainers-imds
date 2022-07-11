@@ -35,7 +35,7 @@ import (
 func TestInstanceMetadata(t *testing.T) {
     ctx := context.Background()
 
-    container, err := aemm.Container(ctx)
+    container, err := aemm.Start(ctx)
     require.NoError(t, err)
     defer container.Terminate(ctx)
 
