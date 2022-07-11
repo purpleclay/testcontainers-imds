@@ -39,10 +39,10 @@ func TestInstanceMetadata(t *testing.T) {
     require.NoError(t, err)
     defer container.Terminate(ctx)
 
-    resp, _ := http.Get("http://localhost:1338/latest/meta-data/local-ipv4")
+    resp, _ := http.Get(container.URL + aemm.PathLocalIPv4)
     defer resp.Body.Close()
 
     out, _ := ioutil.ReadAll(resp.Body)
-    assert.Equal(t, "172.16.34.43", string(out))
+    assert.Equal(t, aemm.ValueLocalIPv4, string(out))
 }
 ```
