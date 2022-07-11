@@ -18,35 +18,38 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-version: 2
-updates:
-  - package-ecosystem: "gomod"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    labels:
-      - "dependabot"
-      - "pinned"
-    commit-message:
-      prefix: "feat"
-      include: "scope"
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    labels:
-      - "dependabot"
-      - "pinned"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    labels:
-      - "dependabot"
-      - "pinned"
-    commit-message:
-      prefix: "feat"
-      include: "scope"
+name: publish-container
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Dockerfile"
+jobs:
+  publish-container:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Parse Tag
+        id: parse-tag
+        run: echo "::set-output name=docker_tag::$(grep "FROM" Dockerfile | cut -d ":" -f2)"
+      - name: GHCR Login
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build And Publish
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/purpleclay/amazon-ec2-metadata-mock:latest,ghcr.io/purpleclay/amazon-ec2-metadata-mock:${{ steps.parse-tag.outputs.docker_tag }}
