@@ -34,14 +34,14 @@ import (
 )
 
 func TestContainer_WithDefaults(t *testing.T) {
-	containerWithDefaults(t)
+	startWithDefaults(t)
 
 	out, _ := get(t, "http://localhost:1338/latest/meta-data")
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
 func TestContainer_StrictIMDSv2Unauthorised(t *testing.T) {
-	containerWithOptions(t, aemm.LaunchOptions{StrictIMDSv2: true})
+	startWithOptions(t, aemm.Options{StrictIMDSv2: true})
 
 	out, status := get(t, "http://localhost:1338/latest/meta-data")
 
@@ -50,17 +50,17 @@ func TestContainer_StrictIMDSv2Unauthorised(t *testing.T) {
 }
 
 func TestContainer_StrictIMDSv2(t *testing.T) {
-	containerWithOptions(t, aemm.LaunchOptions{StrictIMDSv2: true})
+	startWithOptions(t, aemm.Options{StrictIMDSv2: true})
 
 	out, _ := getAuthorised(t, "http://localhost:1338/latest/meta-data")
 
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
-func containerWithDefaults(t *testing.T) {
+func startWithDefaults(t *testing.T) {
 	t.Helper()
 
-	container, err := aemm.Container(context.Background())
+	container, err := aemm.Start(context.Background())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -68,10 +68,10 @@ func containerWithDefaults(t *testing.T) {
 	})
 }
 
-func containerWithOptions(t *testing.T, opts aemm.LaunchOptions) {
+func startWithOptions(t *testing.T, opts aemm.Options) {
 	t.Helper()
 
-	container, err := aemm.ContainerWith(context.Background(), opts)
+	container, err := aemm.StartWith(context.Background(), opts)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
