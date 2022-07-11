@@ -34,7 +34,7 @@ import (
 // Start will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
 // simulating the Amazon EC2 Metadata Service (IMDS). Once started, IMDS will
 // be accessible through the endpoint. As the caller it is your responsibility to
-// terminate the container through calling Terminate()
+// terminate the container by invoking the Terminate() method on the container.
 //
 // http://localhost:1338/latest/metadata
 //
@@ -60,7 +60,12 @@ func Start(ctx context.Context) (testcontainers.Container, error) {
 	return StartWith(ctx, Options{})
 }
 
-// MustStart ...
+// MustStart behaves in the same way as Start but panics if the container cannot
+// be started for any reason. This removes the need to handle any returned errors,
+// simplifying initialisation.
+//
+// As the caller it is your responsibility to terminate the container by invoking
+// the Terminate() method on the container.
 func MustStart(ctx context.Context) testcontainers.Container {
 	container, err := StartWith(ctx, Options{})
 	if err != nil {
@@ -101,7 +106,7 @@ type Options struct {
 // simulating the Amazon EC2 Metadata Service (IMDS). The launch behaviour of the AEMM
 // can be configured through the provided LaunchOptions. Once started, IMDS will
 // be accessible through the endpoint. As the caller it is your responsibility to
-// terminate the container through calling Terminate()
+// terminate the container by invoking the Terminate() method on the container.
 //
 // http://localhost:1338/latest/metadata
 //
@@ -149,7 +154,12 @@ func StartWith(ctx context.Context, opts Options) (testcontainers.Container, err
 	})
 }
 
-// MustStartWith ...
+// MustStartWith behaves in the same way as StartWith but panics if the container cannot
+// be started for any reason. This removes the need to handle any returned errors,
+// simplifying initialisation.
+//
+// As the caller it is your responsibility to terminate the container by invoking
+// the Terminate() method on the container.
 func MustStartWith(ctx context.Context, opts Options) testcontainers.Container {
 	container, err := StartWith(ctx, opts)
 	if err != nil {

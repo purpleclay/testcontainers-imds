@@ -33,14 +33,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestContainer_WithDefaults(t *testing.T) {
+func TestStart(t *testing.T) {
 	startWithDefaults(t)
 
 	out, _ := get(t, "http://localhost:1338/latest/meta-data")
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
-func TestContainer_StrictIMDSv2Unauthorised(t *testing.T) {
+func TestMustStart(t *testing.T) {
+	// TODO: start up a random container that blocks the default port
+
+	// TODO: ensure the code panics
+}
+
+func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
 	startWithOptions(t, aemm.Options{StrictIMDSv2: true})
 
 	out, status := get(t, "http://localhost:1338/latest/meta-data")
@@ -49,12 +55,16 @@ func TestContainer_StrictIMDSv2Unauthorised(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, status)
 }
 
-func TestContainer_StrictIMDSv2(t *testing.T) {
+func TestStartWith_StrictIMDSv2(t *testing.T) {
 	startWithOptions(t, aemm.Options{StrictIMDSv2: true})
 
 	out, _ := getAuthorised(t, "http://localhost:1338/latest/meta-data")
 
 	assert.Contains(t, string(out), "local-ipv4")
+}
+
+func TestMustStartWith(t *testing.T) {
+	// TODO: start with an image that doesn't exist
 }
 
 func startWithDefaults(t *testing.T) {
