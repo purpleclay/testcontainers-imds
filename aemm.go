@@ -32,11 +32,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// Container ...
+// Container represents an instance of an AEMM container
 type Container struct {
 	testcontainers.Container
 
-	// URL ...
+	// URL for querying the default instance metadata endpoint of the container
+	//	@Default http://localhost:<EXPOSED_PORT>/latest/meta-data
 	URL string
 }
 
