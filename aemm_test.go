@@ -33,10 +33,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStart(t *testing.T) {
-	startWithDefaults(t)
+func TestStart_CheckURL(t *testing.T) {
+	url := startWithDefaults(t)
 
-	out, _ := get(t, "http://localhost:1338/latest/meta-data")
+	assert.Equal(t, "http://localhost:1338/latest/meta-data", url)
+}
+
+func TestStart(t *testing.T) {
+	url := startWithDefaults(t)
+
+	out, _ := get(t, url)
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
@@ -59,18 +65,18 @@ func TestMustStart(t *testing.T) {
 }
 
 func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
-	startWithOptions(t, aemm.Options{StrictIMDSv2: true})
+	url := startWithOptions(t, aemm.Options{StrictIMDSv2: true})
 
-	out, status := get(t, "http://localhost:1338/latest/meta-data")
+	out, status := get(t, url)
 
 	assert.Contains(t, string(out), "<h1>401 - Unauthorized</h1>")
 	assert.Equal(t, http.StatusUnauthorized, status)
 }
 
 func TestStartWith_StrictIMDSv2(t *testing.T) {
-	startWithOptions(t, aemm.Options{StrictIMDSv2: true})
+	url := startWithOptions(t, aemm.Options{StrictIMDSv2: true})
 
-	out, _ := getAuthorised(t, "http://localhost:1338/latest/meta-data")
+	out, _ := getAuthorised(t, url)
 
 	assert.Contains(t, string(out), "local-ipv4")
 }
@@ -79,6 +85,12 @@ func TestMustStartWith_Panics(t *testing.T) {
 	require.Panics(t, func() {
 		aemm.MustStartWith(context.Background(), aemm.Options{Image: "image-pull-failure"})
 	})
+}
+
+func TestStartWith_CheckURL(t *testing.T) {
+	url := startWithOptions(t, aemm.Options{ExposedPort: "2233"})
+
+	assert.Equal(t, "http://localhost:2233/latest/meta-data", url)
 }
 
 func TestMustStartWith(t *testing.T) {
@@ -90,7 +102,7 @@ func TestMustStartWith(t *testing.T) {
 	})
 }
 
-func startWithDefaults(t *testing.T) {
+func startWithDefaults(t *testing.T) string {
 	t.Helper()
 
 	container, err := aemm.Start(context.Background())
@@ -99,9 +111,11 @@ func startWithDefaults(t *testing.T) {
 	t.Cleanup(func() {
 		container.Terminate(context.Background())
 	})
+
+	return container.URL
 }
 
-func startWithOptions(t *testing.T, opts aemm.Options) {
+func startWithOptions(t *testing.T, opts aemm.Options) string {
 	t.Helper()
 
 	container, err := aemm.StartWith(context.Background(), opts)
@@ -110,6 +124,8 @@ func startWithOptions(t *testing.T, opts aemm.Options) {
 	t.Cleanup(func() {
 		container.Terminate(context.Background())
 	})
+
+	return container.URL
 }
 
 func get(t *testing.T, url string) (string, int) {

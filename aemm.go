@@ -32,6 +32,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// Container represents an instance of an AEMM container
+type Container struct {
+	testcontainers.Container
+
+	// URL for querying the default instance metadata endpoint of the container
+	//	@Default http://localhost:<EXPOSED_PORT>/latest/meta-data
+	URL string
+}
+
 // Start will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
 // simulating the Amazon EC2 Metadata Service (IMDS). Once started, IMDS will
 // be accessible through the endpoint. As the caller it is your responsibility to
@@ -57,7 +66,7 @@ import (
 //	func main() {
 //		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data"))
 //	}
-func Start(ctx context.Context) (testcontainers.Container, error) {
+func Start(ctx context.Context) (*Container, error) {
 	return StartWith(ctx, Options{})
 }
 
@@ -67,7 +76,7 @@ func Start(ctx context.Context) (testcontainers.Container, error) {
 //
 // As the caller it is your responsibility to terminate the container by invoking
 // the Terminate() method on the container.
-func MustStart(ctx context.Context) testcontainers.Container {
+func MustStart(ctx context.Context) *Container {
 	container, err := StartWith(ctx, Options{})
 	if err != nil {
 		panic(`aemm: MustStart(): ` + err.Error())
@@ -129,7 +138,7 @@ type Options struct {
 //	func main() {
 //		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data"))
 //	}
-func StartWith(ctx context.Context, opts Options) (testcontainers.Container, error) {
+func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	// Adjust the wait strategy based on the options
 	waitStrategy := wait.ForHTTP("/latest/meta-data").WithPort("1338")
 
@@ -153,10 +162,18 @@ func StartWith(ctx context.Context, opts Options) (testcontainers.Container, err
 		WaitingFor:   waitStrategy,
 	}
 
-	return testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &Container{
+		Container: container,
+		URL:       fmt.Sprintf("http://localhost:%s/latest/meta-data", opts.ExposedPort),
+	}, nil
 }
 
 // MustStartWith behaves in the same way as StartWith but panics if the container cannot
@@ -165,7 +182,7 @@ func StartWith(ctx context.Context, opts Options) (testcontainers.Container, err
 //
 // As the caller it is your responsibility to terminate the container by invoking
 // the Terminate() method on the container.
-func MustStartWith(ctx context.Context, opts Options) testcontainers.Container {
+func MustStartWith(ctx context.Context, opts Options) *Container {
 	container, err := StartWith(ctx, opts)
 	if err != nil {
 		panic(`aemm: MustStartWith(` + fmt.Sprintf("%#v", opts) + `): ` + err.Error())
