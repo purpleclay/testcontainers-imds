@@ -88,12 +88,12 @@ func MustStart(ctx context.Context) *Container {
 // Options defines all configurable options when starting the AEMM container
 type Options struct {
 	// Image is the name of the AEMM image to pull when launching the container
-	// 	@Default public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock
-	Image string `default:"public.ecr.aws/aws-ec2/amazon-ec2-metadata-mock"`
+	// 	@Default ghcr.io/purpleclay/amazon-ec2-metadata-mock
+	Image string `default:"ghcr.io/purpleclay/amazon-ec2-metadata-mock"`
 
 	// ImageTag is the version of the AEMM image to pull from the source docker registry
-	//	@Default v1.11.1
-	ImageTag string `default:"v1.11.1"`
+	//	@Default latest
+	ImageTag string `default:"latest"`
 
 	// ExposedPort defines which port on the host will be mapped to the default port
 	// of the container
