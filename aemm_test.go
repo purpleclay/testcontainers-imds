@@ -36,7 +36,7 @@ import (
 func TestStart_CheckURL(t *testing.T) {
 	url := startWithDefaults(t)
 
-	assert.Equal(t, "http://localhost:1338/latest/meta-data", url)
+	assert.Equal(t, "http://localhost:1338/latest/meta-data/", url)
 }
 
 func TestStart(t *testing.T) {
@@ -90,7 +90,7 @@ func TestMustStartWith_Panics(t *testing.T) {
 func TestStartWith_CheckURL(t *testing.T) {
 	url := startWithOptions(t, aemm.Options{ExposedPort: "2233"})
 
-	assert.Equal(t, "http://localhost:2233/latest/meta-data", url)
+	assert.Equal(t, "http://localhost:2233/latest/meta-data/", url)
 }
 
 func TestMustStartWith(t *testing.T) {

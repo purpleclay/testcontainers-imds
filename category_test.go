@@ -23,7 +23,6 @@ SOFTWARE.
 package aemm_test
 
 import (
-	"fmt"
 	"testing"
 
 	aemm "github.com/purpleclay/testcontainers-aemm"
@@ -95,7 +94,7 @@ func TestCategory(t *testing.T) {
 // Utility wrapper, tidying up inline test functions
 func checkIMDSCategory(url, cat, value string) func(t *testing.T) {
 	return func(t *testing.T) {
-		v, _ := get(t, fmt.Sprintf("%s/%s", url, cat))
+		v, _ := get(t, url+cat)
 		require.Equal(t, value, v)
 	}
 }

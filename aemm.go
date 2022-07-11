@@ -172,7 +172,7 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 
 	return &Container{
 		Container: container,
-		URL:       fmt.Sprintf("http://localhost:%s/latest/meta-data", opts.ExposedPort),
+		URL:       fmt.Sprintf("http://localhost:%s/latest/meta-data/", opts.ExposedPort),
 	}, nil
 }
 
