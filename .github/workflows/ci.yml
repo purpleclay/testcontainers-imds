@@ -53,7 +53,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3.2.0
         with:
           skip-go-installation: true
-          version: v1.46.2
+          version: v1.47.3
       - name: misspell
         uses: reviewdog/action-misspell@v1
         with:
