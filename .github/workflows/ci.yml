@@ -66,6 +66,6 @@ jobs:
             ./Taskfile.yaml
             ./.github/workflows/**
             ./CODE_OF_CONDUCT.md
-            ./aemm_test.go
+            ./imds_test.go
       - name: Code Coverage
         uses: codecov/codecov-action@v3
