@@ -20,15 +20,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package aemm_test
+package imds_test
 
 import (
 	"context"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"testing"
 
-	aemm "github.com/purpleclay/testcontainers-aemm"
+	imds "github.com/purpleclay/testcontainers-imds"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,7 +52,7 @@ func TestMustStart_Panics(t *testing.T) {
 	startWithDefaults(t)
 
 	require.Panics(t, func() {
-		aemm.MustStart(context.Background())
+		imds.MustStart(context.Background())
 	})
 }
 
@@ -59,13 +60,13 @@ func TestMustStart(t *testing.T) {
 	require.NotPanics(t, func() {
 		ctx := context.Background()
 
-		container := aemm.MustStart(ctx)
+		container := imds.MustStart(ctx)
 		container.Terminate(ctx)
 	})
 }
 
 func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
-	url := startWithOptions(t, aemm.Options{StrictIMDSv2: true})
+	url := startWithOptions(t, imds.Options{StrictIMDSv2: true})
 
 	out, status := get(t, url)
 
@@ -74,7 +75,7 @@ func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
 }
 
 func TestStartWith_StrictIMDSv2(t *testing.T) {
-	url := startWithOptions(t, aemm.Options{StrictIMDSv2: true})
+	url := startWithOptions(t, imds.Options{StrictIMDSv2: true})
 
 	out, _ := getAuthorised(t, url)
 
@@ -83,12 +84,12 @@ func TestStartWith_StrictIMDSv2(t *testing.T) {
 
 func TestMustStartWith_Panics(t *testing.T) {
 	require.Panics(t, func() {
-		aemm.MustStartWith(context.Background(), aemm.Options{Image: "image-pull-failure"})
+		imds.MustStartWith(context.Background(), imds.Options{Image: "image-pull-failure"})
 	})
 }
 
 func TestStartWith_CheckURL(t *testing.T) {
-	url := startWithOptions(t, aemm.Options{ExposedPort: "2233"})
+	url := startWithOptions(t, imds.Options{ExposedPort: "2233"})
 
 	assert.Equal(t, "http://localhost:2233/latest/meta-data/", url)
 }
@@ -97,7 +98,7 @@ func TestMustStartWith(t *testing.T) {
 	require.NotPanics(t, func() {
 		ctx := context.Background()
 
-		container := aemm.MustStartWith(ctx, aemm.Options{})
+		container := imds.MustStartWith(ctx, imds.Options{})
 		container.Terminate(ctx)
 	})
 }
@@ -105,7 +106,7 @@ func TestMustStartWith(t *testing.T) {
 func startWithDefaults(t *testing.T) string {
 	t.Helper()
 
-	container, err := aemm.Start(context.Background())
+	container, err := imds.Start(context.Background())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -115,10 +116,10 @@ func startWithDefaults(t *testing.T) string {
 	return container.URL
 }
 
-func startWithOptions(t *testing.T, opts aemm.Options) string {
+func startWithOptions(t *testing.T, opts imds.Options) string {
 	t.Helper()
 
-	container, err := aemm.StartWith(context.Background(), opts)
+	container, err := imds.StartWith(context.Background(), opts)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -138,7 +139,7 @@ func get(t *testing.T, url string) (string, int) {
 		resp.Body.Close()
 	})
 
-	out, err := ioutil.ReadAll(resp.Body)
+	out, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
 	return string(out), resp.StatusCode
@@ -160,9 +161,11 @@ func getAuthorised(t *testing.T, url string) (string, int) {
 		authResp.Body.Close()
 	})
 
-	data, err := ioutil.ReadAll(authResp.Body)
+	data, err := io.ReadAll(authResp.Body)
 	require.NoError(t, err)
 	token := string(data)
+
+	fmt.Println(token)
 
 	// Perform IMDS request using authorisation token
 	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
@@ -177,7 +180,7 @@ func getAuthorised(t *testing.T, url string) (string, int) {
 		resp.Body.Close()
 	})
 
-	out, err := ioutil.ReadAll(resp.Body)
+	out, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
 	return string(out), resp.StatusCode

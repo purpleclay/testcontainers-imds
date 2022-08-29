@@ -20,13 +20,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// Package aemm exposes the Amazon EC2 Metadata Mock (AEMM) container through testcontainers-go
+// Package imds exposes the Instance Metadata Mock (imds-mock) container through testcontainers-go
 // supporting the simulation and testing of the Amazon Instance Metadata Service (IMDS).
-// Supporting documentation for the AEMM container can be found at:
-// https://github.com/aws/amazon-ec2-metadata-mock
+// Supporting documentation for the Instance Metatadata Mock can be found at:
+// https://docs.purpleclay.dev/imds-mock/
 //
-// The Amazon EC2 Metadata Mock (AEMM) supports almost all metadata categories, except for the
-// following:
-//  - ancestor-ami-ids
-//  - events/maintenance/history
-package aemm
+// To quickly identify which instance metadata categories are supported, see:
+// https://docs.purpleclay.dev/imds-mock/reference/instance-metadata/
+package imds

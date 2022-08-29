@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package aemm
+package imds
 
 import (
 	"context"
@@ -41,10 +41,10 @@ type Container struct {
 	URL string
 }
 
-// Start will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
+// Start will create and start an instance of the Instance Metadata Mock (imds-mock),
 // simulating the Amazon EC2 Metadata Service (IMDS). Once started, IMDS will
-// be accessible through the endpoint. As the caller it is your responsibility to
-// terminate the container by invoking the Terminate() method on the container.
+// be accessible through the expected endpoint. As the caller it is your responsibility
+// to terminate the container by invoking the Terminate() method on the container.
 //
 // http://localhost:1338/latest/meta-data
 //
@@ -53,18 +53,19 @@ type Container struct {
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
 //
 // For example:
-// 	curl http://localhost:1338/latest/meta-data/local-ipv4
-// 	curl http://localhost:1338/latest/meta-data/block-device-mapping/root
+//
+//	curl http://localhost:1338/latest/meta-data/local-ipv4
+//	curl http://localhost:1338/latest/meta-data/block-device-mapping/root
 //
 // To ensure your AWS config is configured to call this mock, the required option needs to
 // be set:
 //
-// 	package main
+//	package main
 //
 //	import "github.com/aws/aws-sdk-go-v2/config"
 //
 //	func main() {
-//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data"))
+//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data/"))
 //	}
 func Start(ctx context.Context) (*Container, error) {
 	return StartWith(ctx, Options{})
@@ -87,11 +88,13 @@ func MustStart(ctx context.Context) *Container {
 
 // Options defines all configurable options when starting the AEMM container
 type Options struct {
-	// Image is the name of the AEMM image to pull when launching the container
-	// 	@Default ghcr.io/purpleclay/amazon-ec2-metadata-mock
-	Image string `default:"ghcr.io/purpleclay/amazon-ec2-metadata-mock"`
+	// Image is the name of the Instance Metadata Mock image to pull when
+	// launching the container
+	// 	@Default ghcr.io/purpleclay/imds-mock
+	Image string `default:"ghcr.io/purpleclay/imds-mock"`
 
-	// ImageTag is the version of the AEMM image to pull from the source docker registry
+	// ImageTag is the version of the Instance Metadata Mock image to pull
+	// from the source docker registry
 	//	@Default latest
 	ImageTag string `default:"latest"`
 
@@ -112,8 +115,8 @@ type Options struct {
 	StrictIMDSv2 bool
 }
 
-// StartWith will create and start an instance of the Amazon EC2 Metadata Mock (AEMM),
-// simulating the Amazon EC2 Metadata Service (IMDS). The launch behaviour of the AEMM
+// StartWith will create and start an instance of the Instance Metadata Mock (imds-mock),
+// simulating the Amazon EC2 Metadata Service (IMDS). The launch behaviour of the mock
 // can be configured through the provided LaunchOptions. Once started, IMDS will
 // be accessible through the endpoint. As the caller it is your responsibility to
 // terminate the container by invoking the Terminate() method on the container.
@@ -125,13 +128,14 @@ type Options struct {
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
 //
 // For example:
-// 	curl http://localhost:1338/latest/meta-data/local-ipv4
-// 	curl http://localhost:1338/latest/meta-data/block-device-mapping/root
+//
+//	curl http://localhost:1338/latest/meta-data/local-ipv4
+//	curl http://localhost:1338/latest/meta-data/block-device-mapping/root
 //
 // To ensure your AWS config is configured to call this mock, the required option needs to
 // be set:
 //
-// 	package main
+//	package main
 //
 //	import "github.com/aws/aws-sdk-go-v2/config"
 //
@@ -140,20 +144,20 @@ type Options struct {
 //	}
 func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	// Adjust the wait strategy based on the options
-	waitStrategy := wait.ForHTTP("/latest/meta-data").WithPort("1338")
+	waitStrategy := wait.ForHTTP("/latest/meta-data/").WithPort("1338")
+
+	// Ensure all defaults are set before launching the container
+	defaults.Set(&opts)
 
 	flags := []string{}
 	if opts.StrictIMDSv2 {
 		flags = append(flags, "--imdsv2")
 
 		// 401 should be issued without a token
-		waitStrategy = wait.ForHTTP("/latest/meta-data").
+		waitStrategy = wait.ForHTTP("/latest/meta-data/").
 			WithPort("1338").
 			WithStatusCodeMatcher(func(status int) bool { return status == http.StatusUnauthorized })
 	}
-
-	// Ensure all defaults are set before launching the container
-	defaults.Set(&opts)
 
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("%s:%s", opts.Image, opts.ImageTag),
