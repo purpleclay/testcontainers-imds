@@ -28,7 +28,10 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
+	imdsmock "github.com/purpleclay/imds-mock/pkg/imds"
+	"github.com/purpleclay/imds-mock/pkg/imds/patch"
 	imds "github.com/purpleclay/testcontainers-imds"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -134,6 +137,40 @@ func TestStartWith_InstanceTags(t *testing.T) {
 	require.Len(t, tags, 2)
 	assert.Contains(t, tags, "Name")
 	assert.Contains(t, tags, "Environment")
+}
+
+func TestStartWith_Spot(t *testing.T) {
+	url := startWithOptions(t, imds.Options{Spot: true})
+
+	out, status := get(t, url+"spot/instance-action")
+
+	require.Equal(t, http.StatusOK, status)
+	assert.Contains(t, out, `"action":"terminate"`)
+}
+
+func TestStartWith_SpotAction(t *testing.T) {
+	url := startWithOptions(t, imds.Options{
+		Spot: true,
+		SpotAction: imdsmock.SpotActionEvent{
+			Action:   patch.StopSpotInstanceAction,
+			Duration: 200 * time.Millisecond,
+		},
+	})
+
+	// Replicate polling the instance for a spot interruption notice
+	var out string
+	var status int
+	for {
+		out, status = get(t, url+"spot/instance-action")
+		if status == http.StatusOK {
+			break
+		}
+		t.Log("spot interruption hasn't been raised yet. sleep and try again")
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	require.Equal(t, http.StatusOK, status)
+	assert.Contains(t, out, `"action":"stop"`)
 }
 
 func startWithDefaults(t *testing.T) string {

@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/creasty/defaults"
+	imdsmock "github.com/purpleclay/imds-mock/pkg/imds"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -119,6 +120,16 @@ type Options struct {
 	//	@Default false
 	Pretty bool
 
+	// Spot is a flag that controls the simulation of a spot instance and interruption
+	// notice
+	//	@Default false
+	Spot bool
+
+	// SpotAction is used in conjunction with the spot flag to control both the type
+	// and initial delay of the spot interruption notice.
+	//   @Default
+	SpotAction imdsmock.SpotActionEvent `default:"{\"Action\":\"terminate\", \"Duration\": \"0s\"}"`
+
 	// StrictIMDSv2 will enforce IMDSv2 and require a session token when making metadata
 	// requests. A token is requested by issuing a PUT request to the token endpoint, and
 	// supplying a TTL of between 1 and 2600 seconds.
@@ -168,6 +179,25 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	defaults.Set(&opts)
 
 	flags := []string{}
+	if opts.ExcludeInstanceTags {
+		flags = append(flags, "--exclude-instance-tags")
+	}
+
+	if len(opts.InstanceTags) > 0 {
+		flags = append(flags, "--instance-tags")
+		flags = append(flags, keyValueListFlag(opts.InstanceTags))
+	}
+
+	if opts.Pretty {
+		flags = append(flags, "--pretty")
+	}
+
+	if opts.Spot {
+		flags = append(flags, "--spot")
+		flags = append(flags, "--spot-action")
+		flags = append(flags, spotActionFlag(opts.SpotAction))
+	}
+
 	if opts.StrictIMDSv2 {
 		flags = append(flags, "--imdsv2")
 
@@ -175,19 +205,6 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 		waitStrategy = wait.ForHTTP("/latest/meta-data/").
 			WithPort("1338").
 			WithStatusCodeMatcher(func(status int) bool { return status == http.StatusUnauthorized })
-	}
-
-	if opts.Pretty {
-		flags = append(flags, "--pretty")
-	}
-
-	if opts.ExcludeInstanceTags {
-		flags = append(flags, "--exclude-instance-tags")
-	}
-
-	if len(opts.InstanceTags) > 0 {
-		flags = append(flags, "--instance-tags")
-		flags = append(flags, keyValueList(opts.InstanceTags))
 	}
 
 	req := testcontainers.ContainerRequest{
@@ -212,13 +229,17 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	}, nil
 }
 
-func keyValueList(in map[string]string) string {
+func keyValueListFlag(in map[string]string) string {
 	kv := make([]string, 0, len(in))
 	for key, value := range in {
 		kv = append(kv, fmt.Sprintf("%s=%s", key, value))
 	}
 
 	return strings.Join(kv, ",")
+}
+
+func spotActionFlag(event imdsmock.SpotActionEvent) string {
+	return fmt.Sprintf("%s=%s", string(event.Action), event.Duration.String())
 }
 
 // MustStartWith behaves in the same way as StartWith but panics if the container cannot
