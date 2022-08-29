@@ -24,9 +24,9 @@ package imds_test
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	imds "github.com/purpleclay/testcontainers-imds"
@@ -70,8 +70,8 @@ func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
 
 	out, status := get(t, url)
 
-	assert.Contains(t, string(out), "<h1>401 - Unauthorized</h1>")
-	assert.Equal(t, http.StatusUnauthorized, status)
+	require.Equal(t, http.StatusUnauthorized, status)
+	assert.Contains(t, out, "<h1>401 - Unauthorized</h1>")
 }
 
 func TestStartWith_StrictIMDSv2(t *testing.T) {
@@ -101,6 +101,39 @@ func TestMustStartWith(t *testing.T) {
 		container := imds.MustStartWith(ctx, imds.Options{})
 		container.Terminate(ctx)
 	})
+}
+
+func TestStartWith_Pretty(t *testing.T) {
+	url := startWithOptions(t, imds.Options{Pretty: true})
+
+	out, status := get(t, url+"iam/info")
+
+	require.Equal(t, http.StatusOK, status)
+	assert.True(t, strings.HasPrefix(out, "{\n  \"Code\": \"Success\""))
+}
+
+func TestStartWith_ExcludeInstanceTags(t *testing.T) {
+	url := startWithOptions(t, imds.Options{ExcludeInstanceTags: true})
+
+	_, status := get(t, url+"tags/instance")
+
+	require.Equal(t, http.StatusNotFound, status)
+}
+
+func TestStartWith_InstanceTags(t *testing.T) {
+	url := startWithOptions(t, imds.Options{InstanceTags: map[string]string{
+		"Name":        "testing",
+		"Environment": "dev",
+	}})
+
+	out, status := get(t, url+"tags/instance")
+
+	require.Equal(t, http.StatusOK, status)
+
+	tags := strings.Split(out, "\n")
+	require.Len(t, tags, 2)
+	assert.Contains(t, tags, "Name")
+	assert.Contains(t, tags, "Environment")
 }
 
 func startWithDefaults(t *testing.T) string {
@@ -164,8 +197,6 @@ func getAuthorised(t *testing.T, url string) (string, int) {
 	data, err := io.ReadAll(authResp.Body)
 	require.NoError(t, err)
 	token := string(data)
-
-	fmt.Println(token)
 
 	// Perform IMDS request using authorisation token
 	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)

@@ -26,6 +26,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/creasty/defaults"
 	"github.com/testcontainers/testcontainers-go"
@@ -88,6 +89,17 @@ func MustStart(ctx context.Context) *Container {
 
 // Options defines all configurable options when starting the AEMM container
 type Options struct {
+	// ExcludeInstanceTags will ensure any tags associated with the instance
+	// are not exposed through the tags/instance category. Enable this to
+	// simulate the default behaviour of an EC2
+	// 	@Default false
+	ExcludeInstanceTags bool
+
+	// ExposedPort defines which port on the host will be mapped to the default port
+	// of the container
+	//	@Default 1338
+	ExposedPort string `default:"1338"`
+
 	// Image is the name of the Instance Metadata Mock image to pull when
 	// launching the container
 	// 	@Default ghcr.io/purpleclay/imds-mock
@@ -98,10 +110,14 @@ type Options struct {
 	//	@Default latest
 	ImageTag string `default:"latest"`
 
-	// ExposedPort defines which port on the host will be mapped to the default port
-	// of the container
-	//	@Default 1338
-	ExposedPort string `default:"1338"`
+	// InstanceTags defines a list of instance tags that should be exposed through
+	// the instance/tags metadata category, overwriting any existing defaults
+	//	@Default existing instance tags will not be overwritten
+	InstanceTags map[string]string
+
+	// Pretty print any JSON response
+	//	@Default false
+	Pretty bool
 
 	// StrictIMDSv2 will enforce IMDSv2 and require a session token when making metadata
 	// requests. A token is requested by issuing a PUT request to the token endpoint, and
@@ -112,6 +128,8 @@ type Options struct {
 	// Any subsequent request must provide the token as a header:
 	//
 	// 	GET localhost:1338/latest/meta-data/local-ipv4 -H "X-aws-ec2-metadata-token: $TOKEN"
+	//
+	//	@Default false
 	StrictIMDSv2 bool
 }
 
@@ -159,6 +177,19 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 			WithStatusCodeMatcher(func(status int) bool { return status == http.StatusUnauthorized })
 	}
 
+	if opts.Pretty {
+		flags = append(flags, "--pretty")
+	}
+
+	if opts.ExcludeInstanceTags {
+		flags = append(flags, "--exclude-instance-tags")
+	}
+
+	if len(opts.InstanceTags) > 0 {
+		flags = append(flags, "--instance-tags")
+		flags = append(flags, keyValueList(opts.InstanceTags))
+	}
+
 	req := testcontainers.ContainerRequest{
 		Image:        fmt.Sprintf("%s:%s", opts.Image, opts.ImageTag),
 		Cmd:          flags,
@@ -170,6 +201,7 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 		ContainerRequest: req,
 		Started:          true,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +210,15 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 		Container: container,
 		URL:       fmt.Sprintf("http://localhost:%s/latest/meta-data/", opts.ExposedPort),
 	}, nil
+}
+
+func keyValueList(in map[string]string) string {
+	kv := make([]string, 0, len(in))
+	for key, value := range in {
+		kv = append(kv, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	return strings.Join(kv, ",")
 }
 
 // MustStartWith behaves in the same way as StartWith but panics if the container cannot
