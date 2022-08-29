@@ -218,7 +218,6 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		return nil, err
 	}
