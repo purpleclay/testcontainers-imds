@@ -26,8 +26,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/creasty/defaults"
+	imdsmock "github.com/purpleclay/imds-mock/pkg/imds"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -88,6 +90,17 @@ func MustStart(ctx context.Context) *Container {
 
 // Options defines all configurable options when starting the AEMM container
 type Options struct {
+	// ExcludeInstanceTags will ensure any tags associated with the instance
+	// are not exposed through the tags/instance category. Enable this to
+	// simulate the default behaviour of an EC2
+	// 	@Default false
+	ExcludeInstanceTags bool
+
+	// ExposedPort defines which port on the host will be mapped to the default port
+	// of the container
+	//	@Default 1338
+	ExposedPort string `default:"1338"`
+
 	// Image is the name of the Instance Metadata Mock image to pull when
 	// launching the container
 	// 	@Default ghcr.io/purpleclay/imds-mock
@@ -98,10 +111,24 @@ type Options struct {
 	//	@Default latest
 	ImageTag string `default:"latest"`
 
-	// ExposedPort defines which port on the host will be mapped to the default port
-	// of the container
-	//	@Default 1338
-	ExposedPort string `default:"1338"`
+	// InstanceTags defines a list of instance tags that should be exposed through
+	// the instance/tags metadata category, overwriting any existing defaults
+	//	@Default existing instance tags will not be overwritten
+	InstanceTags map[string]string
+
+	// Pretty print any JSON response
+	//	@Default false
+	Pretty bool
+
+	// Spot is a flag that controls the simulation of a spot instance and interruption
+	// notice
+	//	@Default false
+	Spot bool
+
+	// SpotAction is used in conjunction with the spot flag to control both the type
+	// and initial delay of the spot interruption notice.
+	//   @Default
+	SpotAction imdsmock.SpotActionEvent `default:"{\"Action\":\"terminate\", \"Duration\": \"0s\"}"`
 
 	// StrictIMDSv2 will enforce IMDSv2 and require a session token when making metadata
 	// requests. A token is requested by issuing a PUT request to the token endpoint, and
@@ -112,6 +139,8 @@ type Options struct {
 	// Any subsequent request must provide the token as a header:
 	//
 	// 	GET localhost:1338/latest/meta-data/local-ipv4 -H "X-aws-ec2-metadata-token: $TOKEN"
+	//
+	//	@Default false
 	StrictIMDSv2 bool
 }
 
@@ -150,6 +179,25 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	defaults.Set(&opts)
 
 	flags := []string{}
+	if opts.ExcludeInstanceTags {
+		flags = append(flags, "--exclude-instance-tags")
+	}
+
+	if len(opts.InstanceTags) > 0 {
+		flags = append(flags, "--instance-tags")
+		flags = append(flags, keyValueListFlag(opts.InstanceTags))
+	}
+
+	if opts.Pretty {
+		flags = append(flags, "--pretty")
+	}
+
+	if opts.Spot {
+		flags = append(flags, "--spot")
+		flags = append(flags, "--spot-action")
+		flags = append(flags, spotActionFlag(opts.SpotAction))
+	}
+
 	if opts.StrictIMDSv2 {
 		flags = append(flags, "--imdsv2")
 
@@ -178,6 +226,19 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 		Container: container,
 		URL:       fmt.Sprintf("http://localhost:%s/latest/meta-data/", opts.ExposedPort),
 	}, nil
+}
+
+func keyValueListFlag(in map[string]string) string {
+	kv := make([]string, 0, len(in))
+	for key, value := range in {
+		kv = append(kv, fmt.Sprintf("%s=%s", key, value))
+	}
+
+	return strings.Join(kv, ",")
+}
+
+func spotActionFlag(event imdsmock.SpotActionEvent) string {
+	return fmt.Sprintf("%s=%s", string(event.Action), event.Duration.String())
 }
 
 // MustStartWith behaves in the same way as StartWith but panics if the container cannot
