@@ -1,4 +1,4 @@
-module github.com/purpleclay/testcontainers-aemm
+module github.com/purpleclay/testcontainers-imds
 
 go 1.18
 
