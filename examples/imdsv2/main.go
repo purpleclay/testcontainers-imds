@@ -31,10 +31,9 @@ import (
 	imds "github.com/purpleclay/testcontainers-imds"
 )
 
-// TODO: replace these
 const (
-	a = "X-aws-ec2-metadata-token-ttl-seconds"
-	b = "X-aws-ec2-metadata-token"
+	v2TokenTTLHeader = "X-aws-ec2-metadata-token-ttl-seconds"
+	v2TokenHeader    = "X-aws-ec2-metadata-token"
 )
 
 // This examples demonstrates how to enable strict IMDSv2 and require a session token
@@ -68,14 +67,12 @@ func main() {
 	instanceID(container.URL, token)
 }
 
-// TODO: remove the need to write all of this boilerplate code
-
 func instanceID(url, token string) {
 	req, err := http.NewRequest(http.MethodGet, url+imds.PathInstanceID, http.NoBody)
 	if err != nil {
 		log.Fatalf("Failed to create instance ID request. %s\n", err.Error())
 	}
-	req.Header.Add(b, token)
+	req.Header.Add(v2TokenHeader, token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -101,7 +98,7 @@ func generateToken(url string) string {
 	if err != nil {
 		log.Fatalf("Failed to create session token request. %s\n", err.Error())
 	}
-	req.Header.Add(a, "1")
+	req.Header.Add(v2TokenTTLHeader, "1")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
