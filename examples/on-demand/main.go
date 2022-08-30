@@ -24,9 +24,7 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
-	"net/http"
 
 	imds "github.com/purpleclay/testcontainers-imds"
 )
@@ -39,16 +37,10 @@ func main() {
 
 	log.Println("IMDS mock started...")
 
-	resp, err := http.Get(container.URL + imds.PathInstanceLifecycle)
-	if err != nil {
-		log.Fatalf("Failed to query instance metadata mock. %s\n", err.Error())
-	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
+	lifecycle, _, err := container.Get(imds.PathInstanceLifecycle)
 	if err != nil {
 		log.Fatalf("Failed to read instance lifecycle. %s\n", err.Error())
 	}
 
-	log.Printf("Retrieved instance lifecycle: %s\n", string(data))
+	log.Printf("Retrieved instance lifecycle: %s\n", lifecycle)
 }

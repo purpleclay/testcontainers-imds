@@ -25,6 +25,7 @@ package imds
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -259,4 +260,20 @@ func MustStartWith(ctx context.Context, opts Options) *Container {
 	}
 
 	return container
+}
+
+// Get ...
+func (c *Container) Get(category string) (string, int, error) {
+	resp, err := http.Get(c.URL + category)
+	if err != nil {
+		return "", -1, err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", resp.StatusCode, err
+	}
+
+	return string(data), resp.StatusCode, nil
 }

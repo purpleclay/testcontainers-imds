@@ -46,3 +46,7 @@ func TestInstanceMetadata(t *testing.T) {
     assert.Equal(t, imds.ValueLocalIPv4, string(out))
 }
 ```
+
+## Examples
+
+TODO: add links to examples
