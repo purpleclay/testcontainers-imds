@@ -73,6 +73,8 @@ jobs:
             ./.github/workflows/**
             ./CODE_OF_CONDUCT.md
             ./imds_test.go
+            ./examples/go.mod
+            ./examples/go.sum
 
       - name: Code Coverage
         uses: codecov/codecov-action@v3
