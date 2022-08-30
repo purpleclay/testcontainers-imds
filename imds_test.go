@@ -69,7 +69,7 @@ func TestMustStart(t *testing.T) {
 }
 
 func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
-	url := startWithOptions(t, imds.Options{StrictIMDSv2: true})
+	url := startWithOptions(t, imds.Options{IMDSv2: true})
 
 	out, status := get(t, url)
 
@@ -78,7 +78,7 @@ func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
 }
 
 func TestStartWith_StrictIMDSv2(t *testing.T) {
-	url := startWithOptions(t, imds.Options{StrictIMDSv2: true})
+	url := startWithOptions(t, imds.Options{IMDSv2: true})
 
 	out, _ := getAuthorised(t, url)
 

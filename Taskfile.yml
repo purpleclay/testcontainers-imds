@@ -23,3 +23,9 @@ tasks:
     desc: gofumpt all code
     cmds:
       - gofumpt -w -l .
+
+  examples:
+    desc: Build all examples
+    dir: examples
+    cmds:
+      - go build -v ./...
