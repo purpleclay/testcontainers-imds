@@ -39,7 +39,7 @@ func TestInstanceMetadata(t *testing.T) {
     require.NoError(t, err)
     defer container.Terminate(ctx)
 
-    resp, _ := http.Get(container.URL + imds.PathLocalIPv4)
+    resp, _, _ := container.Get(imds.PathLocalIPv4)
     defer resp.Body.Close()
 
     out, _ := ioutil.ReadAll(resp.Body)

@@ -4,7 +4,10 @@ go 1.19
 
 replace github.com/purpleclay/testcontainers-imds => ../
 
-require github.com/purpleclay/testcontainers-imds v0.0.0-00010101000000-000000000000
+require (
+	github.com/purpleclay/imds-mock v0.3.1
+	github.com/purpleclay/testcontainers-imds v0.0.0-00010101000000-000000000000
+)
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -44,7 +47,6 @@ require (
 	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/purpleclay/imds-mock v0.3.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/testcontainers/testcontainers-go v0.13.0 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
