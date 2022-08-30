@@ -38,9 +38,13 @@ import (
 type Container struct {
 	testcontainers.Container
 
-	// URL for querying the default instance metadata endpoint of the container
-	//	@Default http://localhost:<EXPOSED_PORT>/latest/meta-data
+	// URL for querying the instance metadata endpoint of the container
+	//	@Default http://localhost:<EXPOSED_PORT>/latest/meta-data/
 	URL string
+
+	// TokenURL for querying the session token endpoint of the container
+	//	@Default http://localhost:<EXPOSED_PORT>/latest/api/token
+	TokenURL string
 }
 
 // Start will create and start an instance of the Instance Metadata Mock (imds-mock),
@@ -130,7 +134,7 @@ type Options struct {
 	//   @Default
 	SpotAction imdsmock.SpotActionEvent `default:"{\"Action\":\"terminate\", \"Duration\": \"0s\"}"`
 
-	// StrictIMDSv2 will enforce IMDSv2 and require a session token when making metadata
+	// IMDSv2 will enforce IMDSv2 and require a session token when making metadata
 	// requests. A token is requested by issuing a PUT request to the token endpoint, and
 	// supplying a TTL of between 1 and 2600 seconds.
 	//
@@ -141,7 +145,7 @@ type Options struct {
 	// 	GET localhost:1338/latest/meta-data/local-ipv4 -H "X-aws-ec2-metadata-token: $TOKEN"
 	//
 	//	@Default false
-	StrictIMDSv2 bool
+	IMDSv2 bool
 }
 
 // StartWith will create and start an instance of the Instance Metadata Mock (imds-mock),
@@ -198,7 +202,7 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 		flags = append(flags, spotActionFlag(opts.SpotAction))
 	}
 
-	if opts.StrictIMDSv2 {
+	if opts.IMDSv2 {
 		flags = append(flags, "--imdsv2")
 
 		// 401 should be issued without a token
@@ -225,6 +229,7 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	return &Container{
 		Container: container,
 		URL:       fmt.Sprintf("http://localhost:%s/latest/meta-data/", opts.ExposedPort),
+		TokenURL:  fmt.Sprintf("http://localhost:%s/latest/api/token", opts.ExposedPort),
 	}, nil
 }
 

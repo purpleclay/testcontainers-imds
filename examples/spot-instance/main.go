@@ -55,6 +55,8 @@ func main() {
 	})
 	defer container.Terminate(ctx)
 
+	log.Println("IMDS mock started with spot interruption delayed for 5 seconds...")
+
 	for {
 		resp, err := http.Get(container.URL + imds.PathSpotInstanceAction)
 		if err != nil {
