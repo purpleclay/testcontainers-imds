@@ -1,0 +1,73 @@
+/*
+Copyright (c) 2022 Purple Clay
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"time"
+
+	imdsmock "github.com/purpleclay/imds-mock/pkg/imds"
+	"github.com/purpleclay/imds-mock/pkg/imds/patch"
+	imds "github.com/purpleclay/testcontainers-imds"
+)
+
+// This example demonstrates how to monitor for a spot interruption notice based on the best
+// practices documented by Amazon, see:
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-instance-termination-notices.html
+//
+// The imds-mock container will be started with a spot interruption delay of five seconds.
+// The application will loop every one second, checking for the interruption notice and exiting
+// once the spot instance categories are present in the metadata.
+//
+// Details on how the Instance Metadata Mock (imds-mock) handles spot instances can be found
+// here: https://docs.purpleclay.dev/imds-mock/configure/spot/
+func main() {
+	ctx := context.Background()
+
+	container := imds.MustStartWith(ctx, imds.Options{
+		Spot: true,
+		SpotAction: imdsmock.SpotActionEvent{
+			Action:   patch.StopSpotInstanceAction,
+			Duration: 5 * time.Second,
+		},
+	})
+	defer container.Terminate(ctx)
+
+	for {
+		resp, err := http.Get(container.URL + imds.PathSpotInstanceAction)
+		if err != nil {
+			log.Fatalf("Failed to query instance metadata mock. %s\n", err.Error())
+		}
+		resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			log.Println("Spot interruption detected. Exiting...")
+			break
+		}
+
+		log.Println("No spot interruption detected. Sleeping for 1 second...")
+		time.Sleep(1 * time.Second)
+	}
+}

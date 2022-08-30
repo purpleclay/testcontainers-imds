@@ -1,0 +1,4 @@
+# Ignore all compiled binaries from the examples folder
+*
+!/**/
+!*.*
