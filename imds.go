@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/creasty/defaults"
@@ -264,7 +265,42 @@ func MustStartWith(ctx context.Context, opts Options) *Container {
 
 // Get ...
 func (c *Container) Get(category string) (string, int, error) {
-	resp, err := http.Get(c.URL + category)
+	return c.GetWithToken(category, "")
+}
+
+// GetWithToken ...
+func (c *Container) GetWithToken(category, token string) (string, int, error) {
+	req, err := http.NewRequest(http.MethodGet, c.URL+category, http.NoBody)
+	if err != nil {
+		return "", -1, err
+	}
+	if token != "" {
+		req.Header.Add("X-aws-ec2-metadata-token", token)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", -1, err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", resp.StatusCode, err
+	}
+
+	return string(data), resp.StatusCode, nil
+}
+
+// GenerateToken ...
+func (c *Container) GenerateToken(ttl int) (string, int, error) {
+	req, err := http.NewRequest(http.MethodPut, c.TokenURL, http.NoBody)
+	if err != nil {
+		return "", -1, err
+	}
+	req.Header.Add("X-aws-ec2-metadata-token-ttl-seconds", strconv.Itoa(ttl))
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", -1, err
 	}
