@@ -53,17 +53,17 @@ func main() {
 	var tag string
 	var err error
 
-	if tag, _, err = container.Get(imds.PathTagsInstance + "/" + "Name"); err != nil {
+	if tag, _, err = container.Get(imds.InstanceTagPath("Name")); err != nil {
 		log.Fatalf("Failed to read instance tag %s. %s\n", tag, err.Error())
 	}
 	log.Printf("Retrieved tag: Name=%s\n", tag)
 
-	if tag, _, err = container.Get(imds.PathTagsInstance + "/" + "Environment"); err != nil {
+	if tag, _, err = container.Get(imds.InstanceTagPath("Environment")); err != nil {
 		log.Fatalf("Failed to read instance tag %s. %s\n", tag, err.Error())
 	}
 	log.Printf("Retrieved tag: Environment=%s\n", tag)
 
-	if tag, _, err = container.Get(imds.PathTagsInstance + "/" + "Role"); err != nil {
+	if tag, _, err = container.Get(imds.InstanceTagPath("Role")); err != nil {
 		log.Fatalf("Failed to read instance tag %s. %s\n", tag, err.Error())
 	}
 	log.Printf("Retrieved tag: Role=%s\n", tag)

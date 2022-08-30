@@ -24,7 +24,7 @@ package main
 import (
 	"context"
 	"log"
-	"strings"
+	"net/http"
 	"time"
 
 	imds "github.com/purpleclay/testcontainers-imds"
@@ -70,7 +70,7 @@ func instanceID(container *imds.Container, token string) {
 		log.Fatalf("Failed to query instance metadata mock. %s\n", err.Error())
 	}
 
-	if strings.Contains(instanceID, "<title>401 -") {
+	if status == http.StatusUnauthorized {
 		instanceID = ""
 	}
 
