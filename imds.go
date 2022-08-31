@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -298,7 +299,9 @@ func (c *Container) Get(category string) (string, int, error) {
 //	404: category does not exist
 //	401: session token is either invalid or expired
 func (c *Container) GetV2(category, token string) (string, int, error) {
-	req, _ := http.NewRequest(http.MethodGet, c.metadataURL+category, http.NoBody)
+	categoryURL, _ := url.JoinPath(c.metadataURL, category)
+
+	req, _ := http.NewRequest(http.MethodGet, categoryURL, http.NoBody)
 	if token != "" {
 		req.Header.Add("X-aws-ec2-metadata-token", token)
 	}
