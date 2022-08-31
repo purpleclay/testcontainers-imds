@@ -43,6 +43,10 @@ const (
 
 	// MaxTokenTTLInSeconds defines the maximum duration of a session token in seconds
 	MaxTokenTTLInSeconds = 21600
+
+	// AllCategories triggers the retrieval of all instance metadata categories when
+	// using either the Get() or GetWithToken() operations
+	AllCategories = ""
 )
 
 // Container represents an instance of an AEMM container
@@ -279,10 +283,10 @@ func MustStartWith(ctx context.Context, opts Options) *Container {
 //	200: category was retrieved
 //	404: category does not exist
 func (c *Container) Get(category string) (string, int, error) {
-	return c.GetWithToken(category, "")
+	return c.GetV2(category, "")
 }
 
-// GetWithToken will attempt to retrieve an instance category from the running container
+// GetV2 will attempt to retrieve an instance category from the running container
 // using an authenticated session token based request. If the container was not started
 // in IMDSv2 mode, the token will have no effect. The raw value of the category will
 // be returned from the container upon success. If any HTTP failure occurs while trying
@@ -293,7 +297,7 @@ func (c *Container) Get(category string) (string, int, error) {
 //	200: category was retrieved
 //	404: category does not exist
 //	401: session token is either invalid or expired
-func (c *Container) GetWithToken(category, token string) (string, int, error) {
+func (c *Container) GetV2(category, token string) (string, int, error) {
 	req, _ := http.NewRequest(http.MethodGet, c.metadataURL+category, http.NoBody)
 	if token != "" {
 		req.Header.Add("X-aws-ec2-metadata-token", token)

@@ -221,6 +221,19 @@ func getToken(t *testing.T, url string) (string, int) {
 	return token, resp.StatusCode
 }
 
+func TestGetAll(t *testing.T) {
+	container := startWithDefaults(t)
+
+	out, _, _ := container.Get(imds.AllCategories)
+
+	categories := strings.Split(out, "\n")
+
+	// Just verify a subset
+	assert.Contains(t, categories, imds.PathAMIID)
+	assert.Contains(t, categories, imds.PathAMILaunchIndex)
+	assert.Contains(t, categories, imds.PathAMIManifestPath)
+}
+
 func TestGet(t *testing.T) {
 	container := startWithDefaults(t)
 
@@ -243,13 +256,13 @@ func TestGetTimeout(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGetWithToken(t *testing.T) {
+func TestGetV2(t *testing.T) {
 	container := startWithOptions(t, imds.Options{IMDSv2: true})
 
 	token, _ := getToken(t, "http://localhost:1338/latest/api/token")
 	require.NotEmpty(t, token)
 
-	amiID, status, err := container.GetWithToken(imds.PathAMIID, token)
+	amiID, status, err := container.GetV2(imds.PathAMIID, token)
 
 	assert.Equal(t, imds.ValueAMIID, amiID)
 	assert.Equal(t, http.StatusOK, status)

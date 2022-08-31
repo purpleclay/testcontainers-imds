@@ -65,7 +65,7 @@ func main() {
 }
 
 func instanceID(container *imds.Container, token string) {
-	instanceID, status, err := container.GetWithToken(imds.PathInstanceID, token)
+	instanceID, status, err := container.GetV2(imds.PathInstanceID, token)
 	if err != nil {
 		log.Fatalf("Failed to query instance metadata mock. %s\n", err.Error())
 	}
