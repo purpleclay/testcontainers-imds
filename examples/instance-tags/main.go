@@ -24,9 +24,7 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
-	"net/http"
 
 	imds "github.com/purpleclay/testcontainers-imds"
 )
@@ -52,21 +50,21 @@ func main() {
 
 	log.Println("IMDS mock started with three instance tags...")
 
-	log.Printf("Retrieved tag: Name=%s\n", instanceTag(container.URL, "Name"))
-	log.Printf("Retrieved tag: Environment=%s\n", instanceTag(container.URL, "Environment"))
-	log.Printf("Retrieved tag: Role=%s\n", instanceTag(container.URL, "Role"))
-}
+	var tag string
+	var err error
 
-func instanceTag(url, tag string) string {
-	resp, err := http.Get(url + imds.PathTagsInstance + "/" + tag)
-	if err != nil {
-		log.Fatalf("Failed to query instance metadata mock. %s\n", err.Error())
-	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
+	if tag, _, err = container.Get(imds.InstanceTagPath("Name")); err != nil {
 		log.Fatalf("Failed to read instance tag %s. %s\n", tag, err.Error())
 	}
-	return string(data)
+	log.Printf("Retrieved tag: Name=%s\n", tag)
+
+	if tag, _, err = container.Get(imds.InstanceTagPath("Environment")); err != nil {
+		log.Fatalf("Failed to read instance tag %s. %s\n", tag, err.Error())
+	}
+	log.Printf("Retrieved tag: Environment=%s\n", tag)
+
+	if tag, _, err = container.Get(imds.InstanceTagPath("Role")); err != nil {
+		log.Fatalf("Failed to read instance tag %s. %s\n", tag, err.Error())
+	}
+	log.Printf("Retrieved tag: Role=%s\n", tag)
 }

@@ -23,17 +23,11 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"time"
 
 	imds "github.com/purpleclay/testcontainers-imds"
-)
-
-const (
-	v2TokenTTLHeader = "X-aws-ec2-metadata-token-ttl-seconds"
-	v2TokenHeader    = "X-aws-ec2-metadata-token"
 )
 
 // This examples demonstrates how to enable strict IMDSv2 and require a session token
@@ -54,62 +48,31 @@ func main() {
 	log.Println("IMDS mock started with IMDSv2...")
 
 	token := ""
-	instanceID(container.URL, token)
+	instanceID(container, token)
 
-	token = generateToken(container.TokenURL)
+	var err error
+	if token, _, err = container.TokenWithTTL(imds.MinTokenTTLInSeconds); err != nil {
+		log.Fatalf("Failed to generate session token. %s\n", err.Error())
+	}
 	log.Printf("Generated session token with 1 second expiry. %s\n", token)
 
 	// Request the token and then sleep to allow the token to expire
-	instanceID(container.URL, token)
+	instanceID(container, token)
 
 	log.Println("Sleeping for 1 second to allow token to expire...")
 	time.Sleep(1 * time.Second)
-	instanceID(container.URL, token)
+	instanceID(container, token)
 }
 
-func instanceID(url, token string) {
-	req, err := http.NewRequest(http.MethodGet, url+imds.PathInstanceID, http.NoBody)
-	if err != nil {
-		log.Fatalf("Failed to create instance ID request. %s\n", err.Error())
-	}
-	req.Header.Add(v2TokenHeader, token)
-
-	resp, err := http.DefaultClient.Do(req)
+func instanceID(container *imds.Container, token string) {
+	instanceID, status, err := container.GetV2(imds.PathInstanceID, token)
 	if err != nil {
 		log.Fatalf("Failed to query instance metadata mock. %s\n", err.Error())
 	}
-	defer resp.Body.Close()
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Failed to read instance id. %s\n", err.Error())
-	}
-
-	instanceID := string(data)
-	if resp.StatusCode != http.StatusOK {
+	if status == http.StatusUnauthorized {
 		instanceID = ""
 	}
 
-	log.Printf("Retrieved instance ID: %s Status: %d\n", instanceID, resp.StatusCode)
-}
-
-func generateToken(url string) string {
-	req, err := http.NewRequest(http.MethodPut, url, http.NoBody)
-	if err != nil {
-		log.Fatalf("Failed to create session token request. %s\n", err.Error())
-	}
-	req.Header.Add(v2TokenTTLHeader, "1")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Fatalf("Failed to generate session token. %s\n", err.Error())
-	}
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Failed to read session token. %s\n", err.Error())
-	}
-
-	return string(data)
+	log.Printf("Retrieved instance ID: %s Status: %d\n", instanceID, status)
 }

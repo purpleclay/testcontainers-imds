@@ -26,6 +26,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -37,16 +38,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestStart_CheckURL(t *testing.T) {
-	url := startWithDefaults(t)
-
-	assert.Equal(t, "http://localhost:1338/latest/meta-data/", url)
-}
-
 func TestStart(t *testing.T) {
-	url := startWithDefaults(t)
+	startWithDefaults(t)
 
-	out, _ := get(t, url)
+	out, status := get(t, "http://localhost:1338/latest/meta-data/")
+	assert.Equal(t, http.StatusOK, status)
 	assert.Contains(t, string(out), "local-ipv4")
 }
 
@@ -68,33 +64,19 @@ func TestMustStart(t *testing.T) {
 	})
 }
 
-func TestStartWith_StrictIMDSv2Unauthorised(t *testing.T) {
-	url := startWithOptions(t, imds.Options{IMDSv2: true})
+func TestStartWith_IMDSv2(t *testing.T) {
+	startWithOptions(t, imds.Options{IMDSv2: true})
 
-	out, status := get(t, url)
+	out, status := get(t, "http://localhost:1338/latest/meta-data/")
 
 	require.Equal(t, http.StatusUnauthorized, status)
 	assert.Contains(t, out, "<h1>401 - Unauthorized</h1>")
-}
-
-func TestStartWith_StrictIMDSv2(t *testing.T) {
-	url := startWithOptions(t, imds.Options{IMDSv2: true})
-
-	out, _ := getAuthorised(t, url)
-
-	assert.Contains(t, string(out), "local-ipv4")
 }
 
 func TestMustStartWith_Panics(t *testing.T) {
 	require.Panics(t, func() {
 		imds.MustStartWith(context.Background(), imds.Options{Image: "image-pull-failure"})
 	})
-}
-
-func TestStartWith_CheckURL(t *testing.T) {
-	url := startWithOptions(t, imds.Options{ExposedPort: "2233"})
-
-	assert.Equal(t, "http://localhost:2233/latest/meta-data/", url)
 }
 
 func TestMustStartWith(t *testing.T) {
@@ -106,32 +88,36 @@ func TestMustStartWith(t *testing.T) {
 	})
 }
 
+func TestStartWith_ExposedPort(t *testing.T) {
+	startWithOptions(t, imds.Options{ExposedPort: "2233"})
+
+	out, _ := get(t, "http://localhost:2233/latest/meta-data/")
+	assert.Contains(t, string(out), "local-ipv4")
+}
+
 func TestStartWith_Pretty(t *testing.T) {
-	url := startWithOptions(t, imds.Options{Pretty: true})
+	startWithOptions(t, imds.Options{Pretty: true})
 
-	out, status := get(t, url+"iam/info")
+	out, _ := get(t, "http://localhost:1338/latest/meta-data/iam/info")
 
-	require.Equal(t, http.StatusOK, status)
 	assert.True(t, strings.HasPrefix(out, "{\n  \"Code\": \"Success\""))
 }
 
 func TestStartWith_ExcludeInstanceTags(t *testing.T) {
-	url := startWithOptions(t, imds.Options{ExcludeInstanceTags: true})
+	startWithOptions(t, imds.Options{ExcludeInstanceTags: true})
 
-	_, status := get(t, url+"tags/instance")
+	_, status := get(t, "http://localhost:1338/latest/meta-data/tags/instance")
 
 	require.Equal(t, http.StatusNotFound, status)
 }
 
 func TestStartWith_InstanceTags(t *testing.T) {
-	url := startWithOptions(t, imds.Options{InstanceTags: map[string]string{
+	startWithOptions(t, imds.Options{InstanceTags: map[string]string{
 		"Name":        "testing",
 		"Environment": "dev",
 	}})
 
-	out, status := get(t, url+"tags/instance")
-
-	require.Equal(t, http.StatusOK, status)
+	out, _ := get(t, "http://localhost:1338/latest/meta-data/tags/instance")
 
 	tags := strings.Split(out, "\n")
 	require.Len(t, tags, 2)
@@ -140,16 +126,15 @@ func TestStartWith_InstanceTags(t *testing.T) {
 }
 
 func TestStartWith_Spot(t *testing.T) {
-	url := startWithOptions(t, imds.Options{Spot: true})
+	startWithOptions(t, imds.Options{Spot: true})
 
-	out, status := get(t, url+"spot/instance-action")
+	out, _ := get(t, "http://localhost:1338/latest/meta-data/spot/instance-action")
 
-	require.Equal(t, http.StatusOK, status)
 	assert.Contains(t, out, `"action":"terminate"`)
 }
 
 func TestStartWith_SpotAction(t *testing.T) {
-	url := startWithOptions(t, imds.Options{
+	startWithOptions(t, imds.Options{
 		Spot: true,
 		SpotAction: imdsmock.SpotActionEvent{
 			Action:   patch.StopSpotInstanceAction,
@@ -161,7 +146,7 @@ func TestStartWith_SpotAction(t *testing.T) {
 	var out string
 	var status int
 	for {
-		out, status = get(t, url+"spot/instance-action")
+		out, status = get(t, "http://localhost:1338/latest/meta-data/spot/instance-action")
 		if status == http.StatusOK {
 			break
 		}
@@ -169,11 +154,10 @@ func TestStartWith_SpotAction(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 
-	require.Equal(t, http.StatusOK, status)
 	assert.Contains(t, out, `"action":"stop"`)
 }
 
-func startWithDefaults(t *testing.T) string {
+func startWithDefaults(t *testing.T) *imds.Container {
 	t.Helper()
 
 	container, err := imds.Start(context.Background())
@@ -183,10 +167,10 @@ func startWithDefaults(t *testing.T) string {
 		container.Terminate(context.Background())
 	})
 
-	return container.URL
+	return container
 }
 
-func startWithOptions(t *testing.T, opts imds.Options) string {
+func startWithOptions(t *testing.T, opts imds.Options) *imds.Container {
 	t.Helper()
 
 	container, err := imds.StartWith(context.Background(), opts)
@@ -196,7 +180,7 @@ func startWithOptions(t *testing.T, opts imds.Options) string {
 		container.Terminate(context.Background())
 	})
 
-	return container.URL
+	return container
 }
 
 func get(t *testing.T, url string) (string, int) {
@@ -215,31 +199,13 @@ func get(t *testing.T, url string) (string, int) {
 	return string(out), resp.StatusCode
 }
 
-func getAuthorised(t *testing.T, url string) (string, int) {
+func getToken(t *testing.T, url string) (string, int) {
 	t.Helper()
 
-	// Request an authorisation token using supported maximum duration
-	authReq, err := http.NewRequest(http.MethodPut, "http://localhost:1338/latest/api/token", http.NoBody)
+	req, err := http.NewRequest(http.MethodPut, url, http.NoBody)
 	require.NoError(t, err)
 
-	authReq.Header.Add("X-aws-ec2-metadata-token-ttl-seconds", "21600")
-
-	authResp, err := http.DefaultClient.Do(authReq)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		authResp.Body.Close()
-	})
-
-	data, err := io.ReadAll(authResp.Body)
-	require.NoError(t, err)
-	token := string(data)
-
-	// Perform IMDS request using authorisation token
-	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
-	require.NoError(t, err)
-
-	req.Header.Add("X-aws-ec2-metadata-token", token)
+	req.Header.Add("X-aws-ec2-metadata-token-ttl-seconds", strconv.Itoa(imds.MaxTokenTTLInSeconds))
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
@@ -248,8 +214,79 @@ func getAuthorised(t *testing.T, url string) (string, int) {
 		resp.Body.Close()
 	})
 
-	out, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
+	token := string(data)
 
-	return string(out), resp.StatusCode
+	return token, resp.StatusCode
+}
+
+func TestGetAll(t *testing.T) {
+	container := startWithDefaults(t)
+
+	out, _, _ := container.Get(imds.AllCategories)
+
+	categories := strings.Split(out, "\n")
+
+	// Just verify a subset
+	assert.Contains(t, categories, imds.PathAMIID)
+	assert.Contains(t, categories, imds.PathAMILaunchIndex)
+	assert.Contains(t, categories, imds.PathAMIManifestPath)
+}
+
+func TestGet(t *testing.T) {
+	container := startWithDefaults(t)
+
+	ipv4, status, err := container.Get(imds.PathLocalIPv4)
+
+	assert.Equal(t, imds.ValueLocalIPv4, ipv4)
+	assert.Equal(t, http.StatusOK, status)
+	assert.NoError(t, err)
+}
+
+func TestGetTimeout(t *testing.T) {
+	container := startWithDefaults(t)
+	// Ensure a connection error is simulated by immediately stopping the container
+	container.Stop(context.Background(), nil)
+
+	out, status, err := container.Get(imds.PathLocalIPv4)
+
+	assert.Empty(t, out)
+	assert.Equal(t, 0, status)
+	assert.Error(t, err)
+}
+
+func TestGetV2(t *testing.T) {
+	container := startWithOptions(t, imds.Options{IMDSv2: true})
+
+	token, _ := getToken(t, "http://localhost:1338/latest/api/token")
+	require.NotEmpty(t, token)
+
+	amiID, status, err := container.GetV2(imds.PathAMIID, token)
+
+	assert.Equal(t, imds.ValueAMIID, amiID)
+	assert.Equal(t, http.StatusOK, status)
+	assert.NoError(t, err)
+}
+
+func TestTokenWithTTL(t *testing.T) {
+	container := startWithOptions(t, imds.Options{IMDSv2: true})
+
+	token, status, err := container.TokenWithTTL(10)
+
+	assert.NotEmpty(t, token)
+	assert.Equal(t, http.StatusOK, status)
+	assert.NoError(t, err)
+}
+
+func TestTokenWithTTLTimeout(t *testing.T) {
+	container := startWithDefaults(t)
+	// Ensure a connection error is simulated by immediately stopping the container
+	container.Stop(context.Background(), nil)
+
+	out, status, err := container.TokenWithTTL(1)
+
+	assert.Empty(t, out)
+	assert.Equal(t, 0, status)
+	assert.Error(t, err)
 }

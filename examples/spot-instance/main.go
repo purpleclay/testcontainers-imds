@@ -58,13 +58,12 @@ func main() {
 	log.Println("IMDS mock started with spot interruption delayed for 5 seconds...")
 
 	for {
-		resp, err := http.Get(container.URL + imds.PathSpotInstanceAction)
+		_, status, err := container.Get(imds.PathSpotInstanceAction)
 		if err != nil {
 			log.Fatalf("Failed to query instance metadata mock. %s\n", err.Error())
 		}
-		resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK {
+		if status == http.StatusOK {
 			log.Println("Spot interruption detected. Exiting...")
 			break
 		}

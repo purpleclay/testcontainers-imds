@@ -25,8 +25,11 @@ package imds
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/creasty/defaults"
 	imdsmock "github.com/purpleclay/imds-mock/pkg/imds"
@@ -34,17 +37,25 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	// MinTokenTTLInSeconds defines the minimum duration of a session token in seconds
+	MinTokenTTLInSeconds = 1
+
+	// MaxTokenTTLInSeconds defines the maximum duration of a session token in seconds
+	MaxTokenTTLInSeconds = 21600
+
+	// AllCategories triggers the retrieval of all instance metadata categories when
+	// using either the Get() or GetWithToken() operations
+	AllCategories = ""
+)
+
 // Container represents an instance of an AEMM container
 type Container struct {
 	testcontainers.Container
 
-	// URL for querying the instance metadata endpoint of the container
-	//	@Default http://localhost:<EXPOSED_PORT>/latest/meta-data/
-	URL string
-
-	// TokenURL for querying the session token endpoint of the container
-	//	@Default http://localhost:<EXPOSED_PORT>/latest/api/token
-	TokenURL string
+	metadataURL string
+	tokenURL    string
+	client      *http.Client
 }
 
 // Start will create and start an instance of the Instance Metadata Mock (imds-mock),
@@ -52,7 +63,7 @@ type Container struct {
 // be accessible through the expected endpoint. As the caller it is your responsibility
 // to terminate the container by invoking the Terminate() method on the container.
 //
-// http://localhost:1338/latest/meta-data
+// http://localhost:1338/latest/meta-data/
 //
 // By using the default settings, both IMDSv1 and IMDSv2 are supported. Metadata about the
 // mocked EC2 instance can then be retrieved using any of the documented categories,
@@ -154,7 +165,7 @@ type Options struct {
 // be accessible through the endpoint. As the caller it is your responsibility to
 // terminate the container by invoking the Terminate() method on the container.
 //
-// http://localhost:1338/latest/meta-data
+// http://localhost:1338/latest/meta-data/
 //
 // By using the default settings, both IMDSv1 and IMDSv2 are supported. Metadata about the
 // mocked EC2 instance can then be retrieved using any of the documented categories,
@@ -173,7 +184,7 @@ type Options struct {
 //	import "github.com/aws/aws-sdk-go-v2/config"
 //
 //	func main() {
-//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data"))
+//		config.LoadDefaultConfig(context.TODO(), config.WithEC2IMDSEndpoint("http://localhost:1338/latest/meta-data/"))
 //	}
 func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	// Adjust the wait strategy based on the options
@@ -181,6 +192,7 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 
 	// Ensure all defaults are set before launching the container
 	defaults.Set(&opts)
+	fmt.Printf("%#v\n", opts)
 
 	flags := []string{}
 	if opts.ExcludeInstanceTags {
@@ -227,9 +239,10 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 	}
 
 	return &Container{
-		Container: container,
-		URL:       fmt.Sprintf("http://localhost:%s/latest/meta-data/", opts.ExposedPort),
-		TokenURL:  fmt.Sprintf("http://localhost:%s/latest/api/token", opts.ExposedPort),
+		Container:   container,
+		metadataURL: fmt.Sprintf("http://localhost:%s/latest/meta-data/", opts.ExposedPort),
+		tokenURL:    fmt.Sprintf("http://localhost:%s/latest/api/token", opts.ExposedPort),
+		client:      &http.Client{Timeout: 1 * time.Second},
 	}, nil
 }
 
@@ -259,4 +272,64 @@ func MustStartWith(ctx context.Context, opts Options) *Container {
 	}
 
 	return container
+}
+
+// Get will attempt to retrieve an instance category from the running container. The raw
+// value of the category will be returned from the container upon success. If any HTTP
+// failure occurs while trying to retrieve a category, the raw error is returned
+//
+// Status Codes:
+//
+//	200: category was retrieved
+//	404: category does not exist
+func (c *Container) Get(category string) (string, int, error) {
+	return c.GetV2(category, "")
+}
+
+// GetV2 will attempt to retrieve an instance category from the running container
+// using an authenticated session token based request. If the container was not started
+// in IMDSv2 mode, the token will have no effect. The raw value of the category will
+// be returned from the container upon success. If any HTTP failure occurs while trying
+// to retrieve a category, the raw error is returned
+//
+// Status Codes:
+//
+//	200: category was retrieved
+//	404: category does not exist
+//	401: session token is either invalid or expired
+func (c *Container) GetV2(category, token string) (string, int, error) {
+	req, _ := http.NewRequest(http.MethodGet, c.metadataURL+category, http.NoBody)
+	if token != "" {
+		req.Header.Add("X-aws-ec2-metadata-token", token)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", 0, err
+	}
+	defer resp.Body.Close()
+
+	data, _ := io.ReadAll(resp.Body)
+	return string(data), resp.StatusCode, nil
+}
+
+// TokenWithTTL will attempt to generate a session token with the provided TTL in seconds.
+// If any HTTP failure occurs while trying to retrieve a category, the raw error is returned
+//
+// Status Codes:
+//
+//	200: token was created
+//	400: TTL was outside the expected bounds (min: 1, max: 21600)
+func (c *Container) TokenWithTTL(ttl int) (string, int, error) {
+	req, _ := http.NewRequest(http.MethodPut, c.tokenURL, http.NoBody)
+	req.Header.Add("X-aws-ec2-metadata-token-ttl-seconds", strconv.Itoa(ttl))
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", 0, err
+	}
+	defer resp.Body.Close()
+
+	data, _ := io.ReadAll(resp.Body)
+	return string(data), resp.StatusCode, nil
 }
