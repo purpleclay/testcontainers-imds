@@ -51,7 +51,7 @@ func main() {
 	instanceID(container, token)
 
 	var err error
-	if token, _, err = container.GenerateToken(1); err != nil {
+	if token, _, err = container.TokenWithTTL(imds.MinTokenTTLInSeconds); err != nil {
 		log.Fatalf("Failed to generate session token. %s\n", err.Error())
 	}
 	log.Printf("Generated session token with 1 second expiry. %s\n", token)

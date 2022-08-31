@@ -133,7 +133,7 @@ const (
 	valueIAMSecurityCredentials = `{"Code":"Success","LastUpdated":"2022-08-08T04:26:10Z","Type":"AWS-HMAC","AccessKeyId":"ASIABCDEFGHIJKL","SecretAccessKey":"AAAAAA/abcdefghijnklmnopqrstuvwxyz","Token":"ABCDEFGHIJKLMNOP//////////testing12345/YfenfTTuhJuF3bWoRpkiko7x8NKUMRg==","Expiration":"2022-08-08T11:00:36Z"}`
 )
 
-// InstanceTagPath ...
+// InstanceTagPath generates a instance tag category path based on the provided tag
 func InstanceTagPath(tag string) string {
 	return PathTagsInstance + "/" + tag
 }
