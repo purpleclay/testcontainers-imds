@@ -275,6 +275,20 @@ func MustStartWith(ctx context.Context, opts Options) *Container {
 	return container
 }
 
+// URL returns the URL for accessing the metadata endpoint of the container
+//
+//	http://localhost:<EXPOSED_PORT>/latest/meta-data/
+func (c *Container) URL() string {
+	return c.metadataURL
+}
+
+// TokenURL returns the URL for accessing the token endpoint of the container
+//
+//	http://localhost:<EXPOSED_PORT>/latest/api/token
+func (c *Container) TokenURL() string {
+	return c.tokenURL
+}
+
 // Get will attempt to retrieve an instance category from the running container. The raw
 // value of the category will be returned from the container upon success. If any HTTP
 // failure occurs while trying to retrieve a category, the raw error is returned
@@ -294,10 +308,9 @@ func (c *Container) Get(category string) (string, int, error) {
 // to retrieve a category, the raw error is returned
 //
 // Status Codes:
-//
-//	200: category was retrieved
-//	404: category does not exist
-//	401: session token is either invalid or expired
+//   - 200: category was retrieved
+//   - 404: category does not exist
+//   - 401: session token is either invalid or expired
 func (c *Container) GetV2(category, token string) (string, int, error) {
 	categoryURL, _ := url.JoinPath(c.metadataURL, category)
 

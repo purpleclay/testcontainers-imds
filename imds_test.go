@@ -290,3 +290,15 @@ func TestTokenWithTTLTimeout(t *testing.T) {
 	assert.Equal(t, 0, status)
 	assert.Error(t, err)
 }
+
+func TestURL(t *testing.T) {
+	container := startWithDefaults(t)
+
+	assert.Equal(t, "http://localhost:1338/latest/meta-data/", container.URL())
+}
+
+func TestTokenURL(t *testing.T) {
+	container := startWithDefaults(t)
+
+	assert.Equal(t, "http://localhost:1338/latest/api/token", container.TokenURL())
+}
