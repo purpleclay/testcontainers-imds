@@ -6,7 +6,7 @@ require (
 	github.com/creasty/defaults v1.6.0
 	github.com/purpleclay/imds-mock v0.3.1
 	github.com/stretchr/testify v1.8.1
-	github.com/testcontainers/testcontainers-go v0.14.0
+	github.com/testcontainers/testcontainers-go v0.15.0
 )
 
 require (
