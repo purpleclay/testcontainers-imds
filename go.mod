@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/creasty/defaults v1.7.0
 	github.com/purpleclay/imds-mock v0.3.1
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.20.1
 )
 
