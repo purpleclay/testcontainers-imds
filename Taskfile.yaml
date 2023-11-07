@@ -18,37 +18,40 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-builds:
-  - skip: true
+# https://taskfile.dev
 
-changelog:
-  sort: desc
-  use: github
-  filters:
-    exclude:
-      - "^test"
-      - "^chore"
-      - "^ci"
-  groups:
-    - title: "Dependency Updates"
-      regexp: "^.*feat\\(deps\\)*:+.*$"
-      order: 30
-    - title: "New Features"
-      regexp: "^.*feat[(\\w)]*:+.*$"
-      order: 10
-    - title: "Bug Fixes"
-      regexp: "^.*fix[(\\w)]*:+.*$"
-      order: 20
-    - title: "Documentation Updates"
-      regexp: "^.*docs[(\\w)]*:+.*$"
-      order: 40
-    - title: "Other Work"
-      order: 99
+version: "3"
 
-release:
-  footer: |
-    **Full Changelog**: https://github.com/purpleclay/testcontainers-imds/compare/{{ .PreviousTag }}...{{ .Tag }}
+tasks:
+  default:
+    desc: Runs all of the default tasks
+    cmds:
+      - task: lint
+      - task: test
 
-    ## What to do next?
+  test:
+    desc: Run the unit tests
+    vars:
+      TEST_FORMAT: '{{default "" .TEST_FORMAT}}'
+      COVER_PROFILE: '{{default "coverage.out" .COVER_PROFILE}}'
+      TEST_OPTIONS: '{{default "-short -race -vet=off -shuffle=on" .TEST_OPTIONS}}'
+    cmds:
+      - go test {{.TEST_OPTIONS}} -covermode=atomic -coverprofile={{.COVER_PROFILE}} {{.TEST_FORMAT}} ./...
 
-    - Follow us on [Twitter](https://twitter.com/purpleclaydev)
+  lint:
+    desc: Lint the code using golangci-lint
+    vars:
+      REPORT_FORMAT: '{{default "colored-line-number" .REPORT_FORMAT}}'
+    cmds:
+      - golangci-lint run --timeout 5m0s --out-format {{.REPORT_FORMAT}}
+
+  format:
+    desc: Format the code using gofumpt
+    cmds:
+      - gofumpt -w -l .
+
+  examples:
+    desc: Build all examples
+    dir: examples
+    cmds:
+      - go build -v ./...
