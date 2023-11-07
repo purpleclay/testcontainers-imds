@@ -18,46 +18,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# https://taskfile.dev
+version = 1
 
-version: "3"
+test_patterns = [
+  "**/*_test.go"
+]
 
-tasks:
-  default:
-    desc: Runs all of the default tasks
-    cmds:
-      - task: deps
-      - task: lint
-      - task: test
+[[analyzers]]
+name = "go"
 
-  deps:
-    desc: Install all dependencies
-    cmds:
-      - go mod tidy
+    [analyzers.meta]
+    import_root = "github.com/purpleclay/testcontainers-imds"
 
-  test:
-    desc: Run the unit tests
-    vars:
-      TEST_FORMAT: '{{default "" .TEST_FORMAT}}'
-      COVER_PROFILE: '{{default "coverage.out" .COVER_PROFILE}}'
-      TEST_OPTIONS: '{{default "-short -race -vet=off -shuffle=on" .TEST_OPTIONS}}'
-    cmds:
-      - go test {{.TEST_OPTIONS}} -covermode=atomic -coverprofile={{.COVER_PROFILE}} {{.TEST_FORMAT}} ./...
-
-  lint:
-    desc: Lint the code using golangci-lint
-    vars:
-      REPORT_FORMAT: '{{default "colored-line-number" .REPORT_FORMAT}}'
-    cmds:
-      - golangci-lint run --timeout 5m0s --out-format {{.REPORT_FORMAT}}
-
-  format:
-    desc: Format the code using gofumpt
-    cmds:
-      - gofumpt -w -l .
-
-  examples:
-    desc: Build all examples
-    dir: examples
-    cmds:
-      - go build -v ./...
+[[analyzers]]
+name = "secret"
+enabled = true
