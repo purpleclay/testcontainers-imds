@@ -53,8 +53,20 @@ body:
     id: version
     attributes:
       label: Which version?
-      description: Which version of testcontainers-imds are you using?
+      description: Which version are you using?
       placeholder: version
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Which operating system(s) are you using?
+      multiple: true
+      options:
+        - Linux
+        - Mac
+        - Windows
+        - All
     validations:
       required: true
   - type: checkboxes

@@ -1,10 +1,10 @@
 # testcontainers-imds
 
-[![Build status](https://img.shields.io/github/workflow/status/purpleclay/testcontainers-imds/ci?style=flat-square&logo=go)](https://github.com/purpleclay/testcontainers-imds/actions?workflow=ci)
+[![Build status](https://img.shields.io/github/actions/workflow/status/purpleclay/testcontainers-imds/ci.yml?style=flat-square&logo=go)](https://github.com/purpleclay/testcontainers-imds/actions?workflow=ci)
 [![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/purpleclay/testcontainers-imds?style=flat-square)](https://goreportcard.com/report/github.com/purpleclay/testcontainers-imds)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/purpleclay/testcontainers-imds.svg?style=flat-square)](go.mod)
-[![codecov](https://codecov.io/gh/purpleclay/testcontainers-imds/branch/main/graph/badge.svg)](https://codecov.io/gh/purpleclay/testcontainers-imds)
+[![DeepSource](https://deepsource.io/gh/purpleclay/testcontainers-imds.svg/?label=active+issues&token=2-tKXUipTIAHTEf3c_owhaJZ)](https://deepsource.io/gh/purpleclay/testcontainers-imds/?ref=repository-badge)
 
 Testcontainers wrapper for the [Instance Metadata Mock](https://github.com/purpleclay/imds-mock) (imds-mock) tool. Quickly and easily simulate the [Amazon Instance Metadata Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) (IMDS) for localised testing.
 
