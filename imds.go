@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2022 Purple Clay
+Copyright (c) 2022 - 2023 Purple Clay
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -193,9 +193,8 @@ func StartWith(ctx context.Context, opts Options) (*Container, error) {
 
 	// Ensure all defaults are set before launching the container
 	defaults.Set(&opts)
-	fmt.Printf("%#v\n", opts)
 
-	flags := []string{}
+	var flags []string
 	if opts.ExcludeInstanceTags {
 		flags = append(flags, "--exclude-instance-tags")
 	}
@@ -323,10 +322,9 @@ func (c *Container) GetV2(category, token string) (string, int, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	defer resp.Body.Close()
 
 	data, _ := io.ReadAll(resp.Body)
-	return string(data), resp.StatusCode, nil
+	return string(data), resp.StatusCode, resp.Body.Close()
 }
 
 // TokenWithTTL will attempt to generate a session token with the provided TTL in seconds.
@@ -344,8 +342,7 @@ func (c *Container) TokenWithTTL(ttl int) (string, int, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	defer resp.Body.Close()
 
 	data, _ := io.ReadAll(resp.Body)
-	return string(data), resp.StatusCode, nil
+	return string(data), resp.StatusCode, resp.Body.Close()
 }

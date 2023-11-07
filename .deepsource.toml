@@ -18,8 +18,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-blank_issues_enabled: false
-contact_links:
-  - name: Ask a question
-    url: https://github.com/purpleclay/testcontainers-imds/discussions
-    about: Please ask and answer questions here with other members of the community
+version = 1
+
+test_patterns = [
+  "**/*_test.go"
+]
+
+[[analyzers]]
+name = "go"
+
+    [analyzers.meta]
+    import_root = "github.com/purpleclay/testcontainers-imds"
+
+[[analyzers]]
+name = "secret"
+enabled = true

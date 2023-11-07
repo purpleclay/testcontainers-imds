@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Purple Clay
+# Copyright (c) 2022 - 2023 Purple Clay
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,16 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-name: code-quality
+name: codeql
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [main]
-  schedule:
-    - cron: "36 4 * * 6"
+    branches:
+      - main
+    paths:
+      - "**/*.go"
+      - "*.go"
+      - "go.mod"
+      - "go.sum"
 
 jobs:
   analyze:
@@ -47,7 +48,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:

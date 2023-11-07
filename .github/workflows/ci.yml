@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Purple Clay
+# Copyright (c) 2022 - 2023 Purple Clay
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,62 +23,31 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "**/*.go"
+      - "*.go"
+      - "go.mod"
+      - "go.sum"
   pull_request:
+    paths:
+      - "**/*.go"
+      - "*.go"
+      - "go.mod"
+      - "go.sum"
+
+permissions:
+  contents: read
+
 jobs:
-  ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  test:
+    uses: purpleclay/github/.github/workflows/go-test.yml@main
+    with:
+      go-version: ${{ vars.GO_VERSION }}
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.19
-
-      - name: Cache Go
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Install Task
-        uses: arduino/setup-task@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Test
-        run: task test
-
-      # Temporary workaround until the golangci-lint GitHub action supports 1.19
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-      - name: Lint Code
-        run: golangci-lint run --version --verbose --out-format=github-actions
-
-      - name: misspell
-        uses: reviewdog/action-misspell@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          locale: "UK"
-          exclude: |
-            ./go.mod
-            ./go.sum
-            ./.goreleaser.yml
-            ./Taskfile.yaml
-            ./.github/workflows/**
-            ./CODE_OF_CONDUCT.md
-            ./imds_test.go
-            ./examples/go.mod
-            ./examples/go.sum
-
-      - name: Code Coverage
-        uses: codecov/codecov-action@v3
-
-      - name: Build Examples
-        run: task examples
+  lint:
+    uses: purpleclay/github/.github/workflows/golangci-lint.yml@main
+    with:
+      version: ${{ vars.GOLANGCI_LINT_VERSION }}
+      go-version: ${{ vars.GO_VERSION }}
