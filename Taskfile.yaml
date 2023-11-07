@@ -28,14 +28,14 @@ tasks:
     cmds:
       - task: deps
       - task: lint
-      - task: test
+      - task: unit-test
 
   deps:
     desc: Install all dependencies
     cmds:
       - go mod tidy
 
-  test:
+  unit-test:
     desc: Run the unit tests
     vars:
       TEST_FORMAT: '{{default "" .TEST_FORMAT}}'
