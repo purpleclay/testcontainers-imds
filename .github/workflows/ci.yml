@@ -39,24 +39,9 @@ permissions:
   contents: read
 
 jobs:
-  # By splitting testing into its own job will ensure the needs: clause for
-  # static-analysis runs without waiting on the entire matrix. Jobs that run
-  # against macos and windows are considerably slower
   test:
     uses: purpleclay/github/.github/workflows/go-test.yml@main
     with:
-      go-version: ${{ vars.GO_VERSION }}
-    secrets:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
-
-  test-by-os:
-    if: "!startsWith(github.ref, 'refs/tags/')"
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
-    uses: purpleclay/github/.github/workflows/go-test.yml@main
-    with:
-      os: ${{ matrix.os }}
       go-version: ${{ vars.GO_VERSION }}
     secrets:
       github-token: ${{ secrets.GITHUB_TOKEN }}
